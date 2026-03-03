@@ -1,2 +1,4 @@
 .m2/
 **/target/
+**/node_modules/
+pc-agent-plugin/.secrets/
