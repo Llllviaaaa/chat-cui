@@ -6,7 +6,8 @@ import {
   type PluginEvent,
   type PluginEventHandler,
   type PluginEventName,
-  type PluginEventPayloadMap
+  type PluginEventPayloadMap,
+  type RuntimeHealth
 } from "../events/PluginEvents";
 import { LifecycleStateMachine } from "../lifecycle/LifecycleStateMachine";
 
@@ -55,6 +56,14 @@ export class BridgeRuntime {
     this.reconnectAttempt += 1;
     this.lifecycle.onReconnect();
     this.emit("runtime.reconnecting", { attempt: this.reconnectAttempt });
+  }
+
+  reportHealth(health: RuntimeHealth, detail?: string): void {
+    this.emit("runtime.health", { health, detail });
+  }
+
+  reportError(code: string, message: string): void {
+    this.emit("runtime.error", { code, message });
   }
 
   sendOpenCode(message: OpenCodeMessage): void {
