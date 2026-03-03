@@ -18,7 +18,7 @@
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 1 | Gateway Auth Foundation | Establish secure AK/SK-gated connection entry | AUT-01, AUT-02, AUT-03 | 3 |
-| 1.1 | PC Agent plugin architecture alignment (INSERTED) | Urgent alignment with plugin-based reference architecture | TBD | TBD |
+| 1.1 | PC Agent plugin architecture alignment (INSERTED) | Realign PC Agent to plugin-first bridge core with dual-mode runtime and no-drift gates | P01.1-ARCH-01, P01.1-ARCH-02, P01.1-ARCH-03, P01.1-CHAIN-01, P01.1-COMPAT-01, P01.1-SEC-01, P01.1-MIG-01, P01.1-DRIFT-01 | 4 |
 | 2 | PC Agent Bridge Core | Deliver protocol bridge and long-connection runtime | BRG-01, BRG-02, BRG-03 | 4 |
 | 3 | Skill Service Persistence APIs | Persist sessions and expose history retrieval APIs | SVC-01, SVC-02, SVC-03 | 4 |
 | 4 | Interaction Flow + Web UI Demo | Ship end-user trigger and in-session interaction in demo UI | CMD-01, CMD-02, CMD-03, SKL-01, SKL-02, SKL-03, DEM-01 | 5 |
@@ -43,13 +43,23 @@
 
 ### Phase 01.1: PC Agent plugin architecture alignment with message-bridge-opencode-plugin (INSERTED)
 
-**Goal:** [Urgent work - to be planned]
-**Requirements**: TBD
+**Goal:** Enforce plugin-first PC Agent architecture with one shared bridge core for host plugin mode and standalone CLI real-chain mode, while preserving AUTH_V1 and credential security semantics.
+**Requirements**: P01.1-ARCH-01, P01.1-ARCH-02, P01.1-ARCH-03, P01.1-CHAIN-01, P01.1-COMPAT-01, P01.1-SEC-01, P01.1-MIG-01, P01.1-DRIFT-01
 **Depends on:** Phase 1
-**Plans:** 0 plans
+**Plans:** 5 plans
+
+**Success Criteria:**
+1. Plugin mode and CLI mode both run on one shared bridge core with lifecycle/event contracts enforced by tests.
+2. CLI mode executes a reproducible real chain (real OpenCode + real AI-Gateway), not a mock-only path.
+3. AUTH_V1 compatibility and secure credential semantics remain parity-safe against Phase 1 gateway contracts.
+4. No-drift and cutover gates block completion until dual-mode evidence is produced and legacy Java runtime leaves main path.
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 01.1 to break down)
+- [ ] 01.1-01-PLAN.md - plugin-first core scaffold, architecture ADR, and stable requirement mapping
+- [ ] 01.1-02-PLAN.md - shared auth/security adapters with AUTH_V1 and credential parity gates
+- [ ] 01.1-03-PLAN.md - host plugin adapter lifecycle/event integration with no-drift checks
+- [ ] 01.1-04-PLAN.md - standalone CLI adapter with real OpenCode + gateway chain validation
+- [ ] 01.1-05-PLAN.md - CI drift enforcement, acceptance evidence, and legacy Java cutover
 
 ## Phase 2: PC Agent Bridge Core
 
@@ -128,5 +138,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-03 after inserting urgent Phase 01.1*
+*Last updated: 2026-03-03 after planning Phase 01.1*
 

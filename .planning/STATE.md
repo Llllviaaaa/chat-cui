@@ -39,12 +39,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 ## Session Notes
 
-- Stopped at: Phase 01.1 context gathered
-- Resume file: `.planning/phases/01.1-pc-agent-plugin-architecture-alignment-with-message-bridge-opencode-plugin/01.1-CONTEXT.md`
-- Recommended next: `$gsd-plan-phase 01.1`
+- Stopped at: Phase 01.1 plans created and checker-verified
+- Resume file: `.planning/phases/01.1-pc-agent-plugin-architecture-alignment-with-message-bridge-opencode-plugin/01.1-01-PLAN.md`
+- Recommended next: `$gsd-execute-phase 01.1`
 - Roadmap updated: added Phase 7 for PC Agent plugin architecture alignment
 - Roadmap updated: inserted urgent Phase 01.1 for immediate architecture correction
 
 ## Next Command
 
-`$gsd-plan-phase 01.1`
+`$gsd-execute-phase 01.1`
