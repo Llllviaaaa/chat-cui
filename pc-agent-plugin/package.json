@@ -1,0 +1,29 @@
+{
+  "name": "pc-agent-plugin",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:contracts": "vitest run test/contracts",
+    "test:architecture": "vitest run test/architecture/PluginFirstArchitecture.test.ts",
+    "test:auth-signer": "vitest run test/unit/auth/AuthSignerContract.test.ts",
+    "test:auth-errors": "vitest run test/unit/auth/AuthErrorContract.test.ts",
+    "test:security": "vitest run test/unit/security/WindowsCredentialProvider.test.ts",
+    "test:host-lifecycle": "vitest run test/integration/host/HostLifecycle.integration.test.ts",
+    "test:host-events": "vitest run test/integration/host/HostEventContract.integration.test.ts",
+    "test:no-drift-host": "vitest run test/architecture/HostAdapterNoDrift.test.ts",
+    "test:plugin-mode-integration": "vitest run test/integration/host",
+    "test:cli-bootstrap": "vitest run test/unit/cli/CliBootstrap.test.ts",
+    "test:cli-real-chain": "vitest run test/integration/cli/CliRealChain.integration.test.ts",
+    "verify:no-drift": "node ./scripts/validate-no-drift.mjs && vitest run test/architecture",
+    "verify:phase-01.1": "npm run verify:no-drift && npm run test:auth-signer && npm run test:auth-errors && npm run test:security && npm run test:plugin-mode-integration && npm run test:cli-bootstrap && npm run test:cli-real-chain",
+    "cli": "tsx src/cli/index.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.6.0",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}
