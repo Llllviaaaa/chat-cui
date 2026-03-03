@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: skill-service
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${SKILL_DB_URL:jdbc:mysql://127.0.0.1:3306/skill_service?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}
+    username: ${SKILL_DB_USERNAME:skill_user}
+    password: ${SKILL_DB_PASSWORD:}
+
+mybatis:
+  mapper-locations: classpath*:mybatis/**/*.xml
+  type-aliases-package: com.chatcui.skill
+  configuration:
+    map-underscore-to-camel-case: false
