@@ -6,7 +6,7 @@
 
 ## Summary
 
-- Phases: 6
+- Phases: 7
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
@@ -22,6 +22,7 @@
 | 4 | Interaction Flow + Web UI Demo | Ship end-user trigger and in-session interaction in demo UI | CMD-01, CMD-02, CMD-03, SKL-01, SKL-02, SKL-03, DEM-01 | 5 |
 | 5 | Sendback to IM | Let user select output and send as IM message safely | SKL-04, SVC-04, IMS-01, IMS-02, IMS-03 | 5 |
 | 6 | Reliability + Observability Hardening | Add reconnect and cross-service tracing for stable integration | BRG-04, DEM-02 | 4 |
+| 7 | PC Agent Plugin Architecture Alignment | Align PC agent with plugin-based reference architecture | TBD | TBD |
 
 ## Phase Details
 
@@ -100,9 +101,20 @@
 3. Logs include trace identifiers across plugin, gateway, and skill service boundaries.
 4. Core flow dashboard/metrics can diagnose at least auth failure, bridge failure, and sendback failure classes.
 
+## Phase 7: PC Agent Plugin Architecture Alignment
+
+**Goal:** Align implementation approach with a PC-client plugin architecture and the reference repository `message-bridge-opencode-plugin`.
+**Requirements**: TBD
+**Depends on:** Phase 6
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run `$gsd-plan-phase 7` to break down)
+
 ## Requirement Coverage
 
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-03 after Phase 1 gap closure execution*
+*Last updated: 2026-03-03 after adding Phase 7 (plugin architecture alignment)*
+

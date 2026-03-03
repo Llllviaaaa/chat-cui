@@ -27,12 +27,20 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 4 | Interaction Flow + Web UI Demo | Pending |
 | 5 | Sendback to IM | Pending |
 | 6 | Reliability + Observability Hardening | Pending |
+| 7 | PC Agent Plugin Architecture Alignment | Pending |
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 7 added: PC Agent plugin architecture alignment with `message-bridge-opencode-plugin` reference
 
 ## Session Notes
 
 - Stopped at: Phase 1 gap plans executed and verification passed
 - Resume file: `.planning/ROADMAP.md`
 - Recommended next: `$gsd-plan-phase 2`
+- Roadmap updated: added Phase 7 for PC Agent plugin architecture alignment
 
 ## Next Command
 
