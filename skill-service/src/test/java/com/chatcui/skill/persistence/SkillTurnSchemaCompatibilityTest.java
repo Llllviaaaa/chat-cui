@@ -27,15 +27,7 @@ class SkillTurnSchemaCompatibilityTest {
     }
 
     private String loadMigration() throws IOException {
-        Path migration = Path.of(
-                "skill-service",
-                "src",
-                "main",
-                "resources",
-                "db",
-                "migration",
-                "V1__skill_turn_tables.sql"
-        );
+        Path migration = Path.of("src", "main", "resources", "db", "migration", "V1__skill_turn_tables.sql");
         return Files.readString(migration, StandardCharsets.UTF_8);
     }
 }
