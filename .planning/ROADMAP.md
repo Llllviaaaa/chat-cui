@@ -97,7 +97,6 @@ Plans:
 4. Storage schema and indexes are verified on MySQL 5.7 compatibility constraints.
 
 Plans:
-- [ ] 03-01-PLAN.md - skill-service module/bootstrap, DTO contracts, and MySQL 5.7 schema baseline
 - [x] 03-01-PLAN.md - skill-service module/bootstrap, DTO contracts, and MySQL 5.7 schema baseline
 - [ ] 03-02-PLAN.md - skill-service turn persistence and session history query APIs
 - [ ] 03-03-PLAN.md - gateway forwarding path with non-blocking retry and delivery-status semantics
