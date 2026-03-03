@@ -88,12 +88,20 @@ Plans:
 **Goal:** Make Skill service the source for conversation storage and retrieval.
 
 **Requirements:** SVC-01, SVC-02, SVC-03
+**Plans:** 4 plans
 
 **Success Criteria:**
 1. Gateway can forward OpenCode output events to Skill service in near real time.
 2. Skill service stores full conversation turns with session/user/timestamp metadata.
 3. Query API returns ordered chat history for a given session with pagination baseline.
 4. Storage schema and indexes are verified on MySQL 5.7 compatibility constraints.
+
+Plans:
+- [ ] 03-01-PLAN.md - skill-service module/bootstrap, DTO contracts, and MySQL 5.7 schema baseline
+- [x] 03-01-PLAN.md - skill-service module/bootstrap, DTO contracts, and MySQL 5.7 schema baseline
+- [ ] 03-02-PLAN.md - skill-service turn persistence and session history query APIs
+- [ ] 03-03-PLAN.md - gateway forwarding path with non-blocking retry and delivery-status semantics
+- [ ] 03-04-PLAN.md - cross-module verification evidence and phase tracking closure
 
 ## Phase 4: Interaction Flow + Web UI Demo
 
@@ -148,5 +156,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing and verifying Phase 2*
+*Last updated: 2026-03-04 after executing Phase 3 Plan 03-01*
 

@@ -34,8 +34,8 @@
 ### Skill Service and Persistence
 
 - [ ] **SVC-01**: AI-Gateway transparently forwards OpenCode streaming/output events to Skill service.
-- [ ] **SVC-02**: Skill service persists full conversation history with session and actor metadata.
-- [ ] **SVC-03**: Skill client can query persisted session history from Skill service APIs.
+- [x] **SVC-02**: Skill service persists full conversation history with session and actor metadata.
+- [x] **SVC-03**: Skill client can query persisted session history from Skill service APIs.
 - [ ] **SVC-04**: Skill service exposes API to send selected text to IM as a chat message request.
 
 ### IM Sendback
@@ -101,8 +101,8 @@
 | AUT-02 | Phase 1 | Complete |
 | AUT-03 | Phase 1 | Complete |
 | SVC-01 | Phase 3 | Pending |
-| SVC-02 | Phase 3 | Pending |
-| SVC-03 | Phase 3 | Pending |
+| SVC-02 | Phase 3 | Complete |
+| SVC-03 | Phase 3 | Complete |
 | SVC-04 | Phase 5 | Pending |
 | IMS-01 | Phase 5 | Pending |
 | IMS-02 | Phase 5 | Pending |

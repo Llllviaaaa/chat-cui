@@ -24,7 +24,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 1 | Gateway Auth Foundation | Complete |
 | 01.1 | PC Agent plugin architecture alignment | Complete |
 | 2 | PC Agent Bridge Core | Complete |
-| 3 | Skill Service Persistence APIs | Pending |
+| 3 | Skill Service Persistence APIs | In Progress |
 | 4 | Interaction Flow + Web UI Demo | Pending |
 | 5 | Sendback to IM | Pending |
 | 6 | Reliability + Observability Hardening | Pending |
@@ -46,8 +46,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Root cutover: `pom.xml` no longer includes Java `pc-agent` module in main path
 - Completed: Phase 2 plans 02-01..02-04 with acceptance evidence and verification report
 - Verification report: `.planning/phases/02-pc-agent-bridge-core/02-VERIFICATION.md`
-- Next pending step: `$gsd-discuss-phase 3`
+- Completed: Phase 3 Plan 03-01 with module scaffold, DTO contracts, and MySQL 5.7 schema baseline
+- Summary: `.planning/phases/03-skill-service-persistence-apis/03-01-SUMMARY.md`
+- Decision: Keep actor/event enums as uppercase Java constants with lowercase JSON wire values
+- Decision: Enforce required migration keys/indexes via schema contract tests
+- Next pending step: Execute `03-02-PLAN.md`
 
 ## Next Command
 
-`$gsd-discuss-phase 3`
+`$gsd-execute-phase 03-skill-service-persistence-apis`
