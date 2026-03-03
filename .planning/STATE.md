@@ -43,7 +43,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Completed: Phase 01.1 plans 01-05 with summaries and phase verification report
 - Verification report: `.planning/phases/01.1-pc-agent-plugin-architecture-alignment-with-message-bridge-opencode-plugin/01.1-VERIFICATION.md`
 - Root cutover: `pom.xml` no longer includes Java `pc-agent` module in main path
-- Next pending execution phase: Phase 2 (PC Agent Bridge Core)
+- Phase 2 context captured: `.planning/phases/02-pc-agent-bridge-core/02-CONTEXT.md`
+- Next pending step: `$gsd-plan-phase 2`
 
 ## Next Command
 
