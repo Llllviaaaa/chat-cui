@@ -1,14 +1,14 @@
 # STATE
 
 **Initialized:** 2026-03-03  
-**Last updated:** 2026-03-03
+**Last updated:** 2026-03-04
 
 ## Project Reference
 
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 01.1 - PC Agent plugin architecture alignment (urgent)
+**Current focus:** Phase 2 - PC Agent Bridge Core
 
 ## Artifacts
 
@@ -22,7 +22,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | Phase | Name | Status |
 |-------|------|--------|
 | 1 | Gateway Auth Foundation | Complete |
-| 01.1 | PC Agent plugin architecture alignment | Pending (Inserted/Urgent) |
+| 01.1 | PC Agent plugin architecture alignment | Complete |
 | 2 | PC Agent Bridge Core | Pending |
 | 3 | Skill Service Persistence APIs | Pending |
 | 4 | Interaction Flow + Web UI Demo | Pending |
@@ -36,15 +36,15 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 - Phase 7 added: PC Agent plugin architecture alignment with `message-bridge-opencode-plugin` reference
 - Phase 01.1 inserted after Phase 1: PC Agent plugin architecture alignment with `message-bridge-opencode-plugin` (URGENT)
+- Phase 01.1 execution completed with verification pass and no-drift/cutover gates closed
 
 ## Session Notes
 
-- Stopped at: Phase 01.1 plans created and checker-verified
-- Resume file: `.planning/phases/01.1-pc-agent-plugin-architecture-alignment-with-message-bridge-opencode-plugin/01.1-01-PLAN.md`
-- Recommended next: `$gsd-execute-phase 01.1`
-- Roadmap updated: added Phase 7 for PC Agent plugin architecture alignment
-- Roadmap updated: inserted urgent Phase 01.1 for immediate architecture correction
+- Completed: Phase 01.1 plans 01-05 with summaries and phase verification report
+- Verification report: `.planning/phases/01.1-pc-agent-plugin-architecture-alignment-with-message-bridge-opencode-plugin/01.1-VERIFICATION.md`
+- Root cutover: `pom.xml` no longer includes Java `pc-agent` module in main path
+- Next pending execution phase: Phase 2 (PC Agent Bridge Core)
 
 ## Next Command
 
-`$gsd-execute-phase 01.1`
+`$gsd-plan-phase 2`

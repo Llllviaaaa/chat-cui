@@ -11,7 +11,7 @@
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
-- Completed phases: 1 (Phase 1 verified on 2026-03-03)
+- Completed phases: 2 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04)
 
 ## Phase Overview
 
@@ -43,6 +43,8 @@
 
 ### Phase 01.1: PC Agent plugin architecture alignment with message-bridge-opencode-plugin (INSERTED)
 
+**Status:** Complete (verified 2026-03-04)
+
 **Goal:** Enforce plugin-first PC Agent architecture with one shared bridge core for host plugin mode and standalone CLI real-chain mode, while preserving AUTH_V1 and credential security semantics.
 **Requirements**: P01.1-ARCH-01, P01.1-ARCH-02, P01.1-ARCH-03, P01.1-CHAIN-01, P01.1-COMPAT-01, P01.1-SEC-01, P01.1-MIG-01, P01.1-DRIFT-01
 **Depends on:** Phase 1
@@ -55,11 +57,11 @@
 4. No-drift and cutover gates block completion until dual-mode evidence is produced and legacy Java runtime leaves main path.
 
 Plans:
-- [ ] 01.1-01-PLAN.md - plugin-first core scaffold, architecture ADR, and stable requirement mapping
-- [ ] 01.1-02-PLAN.md - shared auth/security adapters with AUTH_V1 and credential parity gates
-- [ ] 01.1-03-PLAN.md - host plugin adapter lifecycle/event integration with no-drift checks
-- [ ] 01.1-04-PLAN.md - standalone CLI adapter with real OpenCode + gateway chain validation
-- [ ] 01.1-05-PLAN.md - CI drift enforcement, acceptance evidence, and legacy Java cutover
+- [x] 01.1-01-PLAN.md - plugin-first core scaffold, architecture ADR, and stable requirement mapping
+- [x] 01.1-02-PLAN.md - shared auth/security adapters with AUTH_V1 and credential parity gates
+- [x] 01.1-03-PLAN.md - host plugin adapter lifecycle/event integration with no-drift checks
+- [x] 01.1-04-PLAN.md - standalone CLI adapter with real OpenCode + gateway chain validation
+- [x] 01.1-05-PLAN.md - CI drift enforcement, acceptance evidence, and legacy Java cutover
 
 ## Phase 2: PC Agent Bridge Core
 
@@ -138,5 +140,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-03 after planning Phase 01.1*
+*Last updated: 2026-03-04 after executing and verifying Phase 01.1*
 

@@ -49,6 +49,17 @@
 - [ ] **DEM-01**: Web UI demo can run the complete flow without depending on native IM client packaging.
 - [ ] **DEM-02**: Logs and metrics can trace one request across plugin, AI-Gateway, and Skill service.
 
+### Phase 01.1 Architecture Correction (Provisional IDs)
+
+- [x] **P01.1-ARCH-01**: Runtime architecture is plugin-first and not standalone-app-first.
+- [x] **P01.1-ARCH-02**: Layered topology (`core/bridge/host-adapter`) with shared lifecycle/event contracts is established.
+- [x] **P01.1-ARCH-03**: Plugin mode and CLI mode both instantiate one shared core runtime.
+- [x] **P01.1-CHAIN-01**: CLI mode enforces real OpenCode + AI-Gateway chain configuration (no mock-only shortcut).
+- [x] **P01.1-COMPAT-01**: AUTH_V1 signing/error compatibility remains aligned with gateway contracts.
+- [x] **P01.1-SEC-01**: Credential semantics preserve typed secure-storage behavior and no secret leakage.
+- [x] **P01.1-MIG-01**: Java `pc-agent` is removed from root main-path module wiring after evidence gate.
+- [x] **P01.1-DRIFT-01**: No-drift automation prevents adapter/core ownership regressions.
+
 ## v2 Requirements
 
 ### Multi-Client Expansion
@@ -98,6 +109,14 @@
 | IMS-03 | Phase 5 | Pending |
 | DEM-01 | Phase 4 | Pending |
 | DEM-02 | Phase 6 | Pending |
+| P01.1-ARCH-01 | Phase 01.1 | Complete |
+| P01.1-ARCH-02 | Phase 01.1 | Complete |
+| P01.1-ARCH-03 | Phase 01.1 | Complete |
+| P01.1-CHAIN-01 | Phase 01.1 | Complete |
+| P01.1-COMPAT-01 | Phase 01.1 | Complete |
+| P01.1-SEC-01 | Phase 01.1 | Complete |
+| P01.1-MIG-01 | Phase 01.1 | Complete |
+| P01.1-DRIFT-01 | Phase 01.1 | Complete |
 
 **Coverage:**
 - v1 requirements: 23 total
