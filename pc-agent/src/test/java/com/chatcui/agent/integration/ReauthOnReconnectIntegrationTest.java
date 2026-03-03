@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.chatcui.agent.auth.WindowsCredentialStore;
 import com.chatcui.agent.auth.WindowsKeystoreCredentialProvider;
 import com.chatcui.agent.config.AuthConfigLoader;
 import com.chatcui.gateway.auth.AuthService;
@@ -19,9 +20,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.prefs.Preferences;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,9 @@ class ReauthOnReconnectIntegrationTest {
         AuthEntryInterceptor interceptor = buildGatewayInterceptor("ACTIVE");
         AuthConfigLoader loader = new AuthConfigLoader();
         AuthConfigLoader.LoadedAuthConfig config = loader.load(baseConfig("active"));
-        WindowsKeystoreCredentialProvider provider = new WindowsKeystoreCredentialProvider(new HashMap<>());
+        Preferences prefs = Preferences.userRoot().node("chatcui-tests/" + UUID.randomUUID());
+        WindowsCredentialStore store = new WindowsCredentialStore(prefs, new PassthroughBackend());
+        WindowsKeystoreCredentialProvider provider = new WindowsKeystoreCredentialProvider(store);
         provider.upsertSecret(config.secretRef(), "secret-a");
 
         AuthRequest first = signedRequest(config, provider.readSecret(config.secretRef()), "nonce-1", "session-1");
@@ -48,6 +52,7 @@ class ReauthOnReconnectIntegrationTest {
         AuthRequest reconnectFresh = signedRequest(config, provider.readSecret(config.secretRef()), "nonce-2", "session-2");
         AuthEntryInterceptor.EntryDecision reconnectSuccess = interceptor.preHandle(reconnectFresh);
         assertTrue(reconnectSuccess.allowed());
+        cleanup(prefs);
     }
 
     @Test
@@ -94,13 +99,39 @@ class ReauthOnReconnectIntegrationTest {
     }
 
     private Map<String, String> baseConfig(String state) {
-        Map<String, String> config = new HashMap<>();
+        Map<String, String> config = new java.util.HashMap<>();
         config.put("tenant_id", "tenant-a");
         config.put("client_id", "client-a");
         config.put("ak", "ak_live_1234");
         config.put("secret_ref", "wincred://tenant-a/client-a");
         config.put("state", state);
         return config;
+    }
+
+    private static void cleanup(Preferences prefs) {
+        try {
+            prefs.removeNode();
+            prefs.flush();
+        } catch (Exception ignored) {
+            // best-effort cleanup for test preferences node
+        }
+    }
+
+    private static final class PassthroughBackend implements WindowsCredentialStore.SecretProtectionBackend {
+        @Override
+        public String protect(String plaintext) {
+            return "enc:" + plaintext;
+        }
+
+        @Override
+        public String unprotect(String ciphertext) {
+            if (!ciphertext.startsWith("enc:")) {
+                throw new com.chatcui.agent.auth.CredentialProvider.CredentialException(
+                        com.chatcui.agent.auth.CredentialProvider.CredentialException.Reason.CORRUPT_ENTRY,
+                        "Corrupt entry");
+            }
+            return ciphertext.substring(4);
+        }
     }
 
     private AuthRequest signedRequest(
