@@ -92,3 +92,8 @@ On successful authentication, gateway principal exposes:
 - `credential_state`
 - `issued_at`
 
+## 8. Plugin and CLI Compatibility Notes (Phase 01.1)
+
+- `pc-agent-plugin` host mode and CLI mode both use the same canonical payload order from this document.
+- CLI `run-session` keeps AUTH_V1 signer behavior in shared core (`src/core/auth/AuthSigner.ts`) and does not redefine canonical ordering in adapter code.
+- Real-chain CLI requires both OpenCode and AI-Gateway endpoints before runtime start; missing chain configuration is rejected early with deterministic AUTH_V1 failure signaling.

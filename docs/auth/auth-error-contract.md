@@ -53,3 +53,9 @@ Notes:
 
 - `gateway` test suite parses this document and validates `AUTH_V1_*` code parity with `AuthFailureCode`.
 - Any code added/removed here must be reflected in enum and mapping tests in the same change.
+
+## 6. Plugin Runtime Compatibility Notes (Phase 01.1)
+
+- `pc-agent-plugin` maps CLI/bootstrap failures into deterministic `AUTH_V1_*` envelopes so host and CLI behavior remain contract-consistent.
+- Plugin mode and CLI mode share one auth-error mapping component (`src/core/auth/AuthFailureMapper.ts`).
+- Migration to plugin runtime does not alter AUTH_V1 envelope fields, code names, or retry semantics.
