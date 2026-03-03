@@ -49,3 +49,7 @@ Notes:
 - Payload and logs must never include raw signature, SK material, or unmasked AK.
 - `trace_id` + `session_id` + `debug_id` are mandatory in every auth rejection.
 
+## 5. Contract Drift Guard
+
+- `gateway` test suite parses this document and validates `AUTH_V1_*` code parity with `AuthFailureCode`.
+- Any code added/removed here must be reflected in enum and mapping tests in the same change.

@@ -3,8 +3,8 @@ package com.chatcui.gateway.auth.model;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -20,19 +20,6 @@ class AuthFailureCodeContractTest {
             "trace_id",
             "session_id",
             "debug_id");
-
-    private static final Map<AuthFailureCode, Set<String>> DOCUMENTED_RESPONSE_FIELDS =
-            new EnumMap<>(AuthFailureCode.class);
-
-    static {
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_MISSING_CREDENTIAL, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_INVALID_SIGNATURE, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_TIMESTAMP_OUT_OF_WINDOW, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_REPLAY_DETECTED, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_COOLDOWN_ACTIVE, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_CREDENTIAL_DISABLED, REQUIRED_RESPONSE_FIELDS);
-        DOCUMENTED_RESPONSE_FIELDS.put(AuthFailureCode.AUTH_V1_PERMISSION_DENIED, REQUIRED_RESPONSE_FIELDS);
-    }
 
     @Test
     void authV1CodesAreUniqueAndPrefixed() {
@@ -50,17 +37,28 @@ class AuthFailureCodeContractTest {
     @Test
     void everyCodeHasDocumentedMapping() {
         Set<AuthFailureCode> allCodes = Set.of(AuthFailureCode.values());
+        Map<AuthFailureCode, Set<String>> documentedMappings = loadDocumentedMappings();
 
         assertEquals(
                 allCodes,
-                DOCUMENTED_RESPONSE_FIELDS.keySet(),
+                documentedMappings.keySet(),
                 "Every AUTH_V1 code must be represented in the documented mapping source");
     }
 
     @Test
     void documentedMappingsContainRequiredResponseFields() {
-        DOCUMENTED_RESPONSE_FIELDS.forEach((code, fields) -> assertTrue(
+        Map<AuthFailureCode, Set<String>> documentedMappings = loadDocumentedMappings();
+        documentedMappings.forEach((code, fields) -> assertTrue(
                 fields.containsAll(REQUIRED_RESPONSE_FIELDS),
                 () -> "Code " + code.name() + " is missing required response fields"));
+    }
+
+    private static Map<AuthFailureCode, Set<String>> loadDocumentedMappings() {
+        Path repoRoot = Path.of("").toAbsolutePath().getParent();
+        AuthErrorContractDocParser.DocumentContract contract = AuthErrorContractDocParser.parse(repoRoot);
+        Set<String> fields = contract.requiredFields();
+        return contract.codes().stream()
+                .map(AuthFailureCode::valueOf)
+                .collect(Collectors.toMap(code -> code, code -> fields));
     }
 }
