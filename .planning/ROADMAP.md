@@ -7,6 +7,7 @@
 ## Summary
 
 - Phases: 7
+- Inserted urgent phases: 1 (`01.1`)
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
@@ -17,6 +18,7 @@
 | # | Phase | Goal | Requirements | Success Criteria |
 |---|-------|------|--------------|------------------|
 | 1 | Gateway Auth Foundation | Establish secure AK/SK-gated connection entry | AUT-01, AUT-02, AUT-03 | 3 |
+| 1.1 | PC Agent plugin architecture alignment (INSERTED) | Urgent alignment with plugin-based reference architecture | TBD | TBD |
 | 2 | PC Agent Bridge Core | Deliver protocol bridge and long-connection runtime | BRG-01, BRG-02, BRG-03 | 4 |
 | 3 | Skill Service Persistence APIs | Persist sessions and expose history retrieval APIs | SVC-01, SVC-02, SVC-03 | 4 |
 | 4 | Interaction Flow + Web UI Demo | Ship end-user trigger and in-session interaction in demo UI | CMD-01, CMD-02, CMD-03, SKL-01, SKL-02, SKL-03, DEM-01 | 5 |
@@ -38,6 +40,16 @@
 1. Client runtime can persist and load AK/SK config with secure handling conventions.
 2. AI-Gateway rejects connection establishment when AK/SK is missing or invalid.
 3. Authentication failures return deterministic error schema usable by UI/plugin layers.
+
+### Phase 01.1: PC Agent plugin architecture alignment with message-bridge-opencode-plugin (INSERTED)
+
+**Goal:** [Urgent work - to be planned]
+**Requirements**: TBD
+**Depends on:** Phase 1
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 01.1 to break down)
 
 ## Phase 2: PC Agent Bridge Core
 
@@ -116,5 +128,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-03 after adding Phase 7 (plugin architecture alignment)*
+*Last updated: 2026-03-03 after inserting urgent Phase 01.1*
 
