@@ -11,7 +11,7 @@
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
-- Completed phases: 2 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04)
+- Completed phases: 3 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04)
 
 ## Phase Overview
 
@@ -65,6 +65,8 @@ Plans:
 
 ## Phase 2: PC Agent Bridge Core
 
+**Status:** Complete (verified 2026-03-04)
+
 **Goal:** Build plugin-driven protocol conversion and long-connection base flow.
 
 **Requirements:** BRG-01, BRG-02, BRG-03
@@ -74,6 +76,12 @@ Plans:
 2. Long-lived gateway connection can stream request/response events for one session.
 3. OpenCode protocol messages are mapped to internal protocol and back without loss of required fields.
 4. Contract tests validate protocol conversion behavior for command, response, and error events.
+
+Plans:
+- [x] 02-01-PLAN.md - protocol conversion contract and stream event mapping
+- [x] 02-02-PLAN.md - long-connection session runtime and in-flight control
+- [x] 02-03-PLAN.md - host/CLI adapter compatibility with phase-2 stream contracts
+- [x] 02-04-PLAN.md - acceptance evidence, verification, and phase tracking closure
 
 ## Phase 3: Skill Service Persistence APIs
 
@@ -140,5 +148,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing and verifying Phase 01.1*
+*Last updated: 2026-03-04 after executing and verifying Phase 2*
 
