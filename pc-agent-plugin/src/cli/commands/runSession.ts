@@ -4,6 +4,7 @@ import {
   type AuthErrorEnvelope,
   type AuthFailureCode
 } from "../../core/auth/AuthFailureMapper";
+import { OPCODE_TYPES } from "../../core/bridge/ProtocolBridge";
 import {
   bootstrapRuntime,
   CliRuntimeBootstrapError,
@@ -56,11 +57,15 @@ export async function runSession(options: RunSessionOptions): Promise<RunSession
 
     runtime.init();
     runtime.start();
+    runtime.startSession(bootstrap.auth.sessionId, bootstrap.auth.traceId);
     runtime.sendOpenCode({
-      type: "cli.session.prompt",
+      type: OPCODE_TYPES.TURN_REQUEST,
       payload: {
-        text: options.question,
-        session_id: bootstrap.auth.sessionId
+        session_id: bootstrap.auth.sessionId,
+        turn_id: `turn-${randomUUID()}`,
+        seq: 1,
+        trace_id: bootstrap.auth.traceId,
+        prompt: options.question
       }
     });
     runtime.reportHealth("healthy", "real chain configuration validated");
@@ -75,6 +80,7 @@ export async function runSession(options: RunSessionOptions): Promise<RunSession
       ].join(" ")
     );
 
+    runtime.endSession("cli_run_complete");
     runtime.stop();
     runtime.dispose();
     unsubscribe();

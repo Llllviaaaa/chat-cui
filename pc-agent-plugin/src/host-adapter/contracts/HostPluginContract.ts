@@ -8,6 +8,19 @@ export interface HostOutboundEvent {
 
 export type HostInboundEvent =
   | {
+      type: "session.start";
+      payload: {
+        session_id: string;
+        trace_id: string;
+      };
+    }
+  | {
+      type: "session.end";
+      payload?: {
+        reason?: string;
+      };
+    }
+  | {
       type: "opencode.message";
       payload: OpenCodeMessage;
     }

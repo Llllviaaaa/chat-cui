@@ -7,6 +7,7 @@
     "test": "vitest run",
     "test:contracts": "vitest run test/contracts",
     "test:architecture": "vitest run test/architecture/PluginFirstArchitecture.test.ts",
+    "test:bridge-runtime": "vitest run test/integration/core/BridgeSessionRuntime.integration.test.ts",
     "test:auth-signer": "vitest run test/unit/auth/AuthSignerContract.test.ts",
     "test:auth-errors": "vitest run test/unit/auth/AuthErrorContract.test.ts",
     "test:security": "vitest run test/unit/security/WindowsCredentialProvider.test.ts",
@@ -18,6 +19,7 @@
     "test:cli-real-chain": "vitest run test/integration/cli/CliRealChain.integration.test.ts",
     "verify:no-drift": "node ./scripts/validate-no-drift.mjs && vitest run test/architecture",
     "verify:phase-01.1": "npm run verify:no-drift && npm run test:auth-signer && npm run test:auth-errors && npm run test:security && npm run test:plugin-mode-integration && npm run test:cli-bootstrap && npm run test:cli-real-chain",
+    "verify:phase-02": "npm run verify:no-drift && npm run test:contracts && npm run test:bridge-runtime && npm run test:host-lifecycle && npm run test:host-events && npm run test:cli-bootstrap && npm run test:cli-real-chain",
     "cli": "tsx src/cli/index.ts"
   },
   "devDependencies": {

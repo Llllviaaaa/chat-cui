@@ -17,6 +17,12 @@ export class HostEventBridge {
 
   dispatchHostEvent(runtime: BridgeRuntime, event: HostInboundEvent): void {
     switch (event.type) {
+      case "session.start":
+        runtime.startSession(event.payload.session_id, event.payload.trace_id);
+        return;
+      case "session.end":
+        runtime.endSession(event.payload?.reason);
+        return;
       case "opencode.message":
         runtime.sendOpenCode(event.payload);
         return;
