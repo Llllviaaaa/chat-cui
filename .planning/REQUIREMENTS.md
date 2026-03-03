@@ -27,9 +27,9 @@
 
 ### Authentication and Security
 
-- [ ] **AUT-01**: User/admin can configure AK/SK credentials in client runtime for gateway authentication.
-- [ ] **AUT-02**: AI-Gateway validates AK/SK before accepting long-lived connection establishment.
-- [ ] **AUT-03**: Invalid or missing AK/SK returns explicit authentication failure and blocks session start.
+- [x] **AUT-01**: User/admin can configure AK/SK credentials in client runtime for gateway authentication.
+- [x] **AUT-02**: AI-Gateway validates AK/SK before accepting long-lived connection establishment.
+- [x] **AUT-03**: Invalid or missing AK/SK returns explicit authentication failure and blocks session start.
 
 ### Skill Service and Persistence
 
@@ -86,9 +86,9 @@
 | BRG-02 | Phase 2 | Pending |
 | BRG-03 | Phase 2 | Pending |
 | BRG-04 | Phase 6 | Pending |
-| AUT-01 | Phase 1 | Pending |
-| AUT-02 | Phase 1 | Pending |
-| AUT-03 | Phase 1 | Pending |
+| AUT-01 | Phase 1 | Complete |
+| AUT-02 | Phase 1 | Complete |
+| AUT-03 | Phase 1 | Complete |
 | SVC-01 | Phase 3 | Pending |
 | SVC-02 | Phase 3 | Pending |
 | SVC-03 | Phase 3 | Pending |
@@ -106,4 +106,4 @@
 
 ---
 *Requirements defined: 2026-03-03*  
-*Last updated: 2026-03-03 after initial definition*
+*Last updated: 2026-03-03 after Phase 1 execution and verification pass*

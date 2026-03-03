@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 1 - Gateway Auth Foundation (gap plans ready)
+**Current focus:** Phase 2 - PC Agent Bridge Core (ready for planning)
 
 ## Artifacts
 
@@ -21,7 +21,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 | Phase | Name | Status |
 |-------|------|--------|
-| 1 | Gateway Auth Foundation | Gap Plans Ready |
+| 1 | Gateway Auth Foundation | Complete |
 | 2 | PC Agent Bridge Core | Pending |
 | 3 | Skill Service Persistence APIs | Pending |
 | 4 | Interaction Flow + Web UI Demo | Pending |
@@ -30,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 ## Session Notes
 
-- Stopped at: Phase 1 gap plans created and verified
-- Resume file: `.planning/phases/01-gateway-auth-foundation/01-05-PLAN.md`
-- Recommended next: `$gsd-execute-phase 1 --gaps-only`
+- Stopped at: Phase 1 gap plans executed and verification passed
+- Resume file: `.planning/ROADMAP.md`
+- Recommended next: `$gsd-plan-phase 2`
 
 ## Next Command
 
-`$gsd-execute-phase 1 --gaps-only`
+`$gsd-plan-phase 2`
