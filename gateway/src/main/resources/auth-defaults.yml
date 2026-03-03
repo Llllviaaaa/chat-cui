@@ -1,0 +1,10 @@
+auth:
+  session:
+    ttl_seconds: 900 # Tunable: session time-to-live for authenticated sessions.
+    renewal_ratio: 0.70 # Tunable: renew session when elapsed time reaches this ratio.
+  validation:
+    skew_tolerance_seconds: 300 # Tunable: max accepted absolute timestamp skew.
+    replay_ttl_seconds: 300 # Tunable: replay nonce retention window.
+  throttle:
+    cooldown_seconds: 60 # Tunable: base cooldown after repeated auth failures.
+
