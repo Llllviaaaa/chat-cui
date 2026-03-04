@@ -97,6 +97,7 @@ None - plan executed exactly as written.
 ## Issues Encountered
 
 - Execution tooling path in workflow references (`$HOME/.claude/...`) did not exist in this workspace; commands were redirected to `C:/Users/15721/.codex/get-shit-done/bin/gsd-tools.cjs` and execution proceeded normally.
+- `requirements mark-complete` could not update because `.planning/REQUIREMENTS.md` is not present in this repository layout (milestone archive path only).
 
 ## Authentication Gates
 
