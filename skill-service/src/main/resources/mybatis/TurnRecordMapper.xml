@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chatcui.skill.persistence.mapper.TurnRecordMapper">
+
+    <resultMap id="TurnRecordMap" type="com.chatcui.skill.persistence.model.TurnRecord">
+        <constructor>
+            <arg column="tenant_id" javaType="java.lang.String"/>
+            <arg column="client_id" javaType="java.lang.String"/>
+            <arg column="session_id" javaType="java.lang.String"/>
+            <arg column="turn_id" javaType="java.lang.String"/>
+            <arg column="seq" javaType="java.lang.Long"/>
+            <arg column="trace_id" javaType="java.lang.String"/>
+            <arg column="actor" javaType="java.lang.String"/>
+            <arg column="event_type" javaType="java.lang.String"/>
+            <arg column="payload" javaType="java.lang.String"/>
+            <arg column="turn_status" javaType="java.lang.String"/>
+            <arg column="delivery_status" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <select id="existsBySessionTurnSeq" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM skill_turn_snapshot
+            WHERE session_id = #{sessionId}
+              AND turn_id = #{turnId}
+              AND seq = #{seq}
+        )
+    </select>
+
+    <select id="findLatestBySessionTurn" resultMap="TurnRecordMap">
+        SELECT tenant_id,
+               client_id,
+               session_id,
+               turn_id,
+               seq,
+               trace_id,
+               actor,
+               event_type,
+               payload,
+               turn_status,
+               delivery_status,
+               created_at
+        FROM skill_turn_snapshot
+        WHERE session_id = #{sessionId}
+          AND turn_id = #{turnId}
+        ORDER BY seq DESC
+        LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.chatcui.skill.persistence.model.TurnRecord">
+        INSERT INTO skill_turn_snapshot (
+            tenant_id,
+            client_id,
+            session_id,
+            turn_id,
+            seq,
+            trace_id,
+            actor,
+            event_type,
+            payload,
+            turn_status,
+            delivery_status
+        ) VALUES (
+            #{tenantId},
+            #{clientId},
+            #{sessionId},
+            #{turnId},
+            #{seq},
+            #{traceId},
+            #{actor},
+            #{eventType},
+            #{payload},
+            #{turnStatus},
+            #{deliveryStatus}
+        )
+        ON DUPLICATE KEY UPDATE
+            payload = VALUES(payload),
+            turn_status = VALUES(turn_status),
+            delivery_status = VALUES(delivery_status),
+            trace_id = VALUES(trace_id),
+            actor = VALUES(actor),
+            event_type = VALUES(event_type)
+    </insert>
+
+    <select id="listHistoryBySession" resultMap="TurnRecordMap">
+        SELECT tenant_id,
+               client_id,
+               session_id,
+               turn_id,
+               seq,
+               trace_id,
+               actor,
+               event_type,
+               payload,
+               turn_status,
+               delivery_status,
+               created_at
+        FROM skill_turn_snapshot
+        WHERE tenant_id = #{tenantId}
+          AND client_id = #{clientId}
+          AND session_id = #{sessionId}
+          <if test="cursorTurnId != null and cursorTurnId != ''">
+            AND turn_id &gt; #{cursorTurnId}
+          </if>
+        ORDER BY created_at ASC, turn_id ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

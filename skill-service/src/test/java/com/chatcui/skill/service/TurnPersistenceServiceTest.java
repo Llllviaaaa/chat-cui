@@ -66,7 +66,7 @@ class TurnPersistenceServiceTest {
         service.persist(completed);
         service.persist(errored);
 
-        verify(turnRecordMapper).insert(any(TurnRecord.class));
+        verify(turnRecordMapper, org.mockito.Mockito.times(3)).insert(any(TurnRecord.class));
         verify(turnRecordMapper).insert(argThatRecord("completed", "delivered", "done", 5L));
         verify(turnRecordMapper).insert(argThatRecord("error", "failed", "boom", 6L));
     }
