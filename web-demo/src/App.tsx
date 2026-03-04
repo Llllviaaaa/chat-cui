@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { HttpSkillDemoApi, type SkillDemoApi } from "./lib/api";
+import { HttpSkillDemoApi, SkillApiError, type SkillDemoApi } from "./lib/api";
 import type { CardStatus, HistoryItem, SkillSessionViewModel } from "./lib/types";
 
 type AppProps = {
@@ -7,6 +7,21 @@ type AppProps = {
   tenantId?: string;
   clientId?: string;
   pollIntervalMs?: number;
+};
+
+type SendbackDraft = {
+  sessionId: string;
+  turnId: string;
+  traceId: string;
+  selectedText: string;
+  messageText: string;
+  mode: "full" | "partial";
+};
+
+type OverlayNotice = {
+  kind: "success" | "error";
+  code?: string;
+  message: string;
 };
 
 const SKILL_LABEL = "Local OpenCode";
@@ -25,6 +40,10 @@ export function App({
   const [overlayOpen, setOverlayOpen] = useState(false);
   const [overlayInput, setOverlayInput] = useState("");
   const [conflictSessionId, setConflictSessionId] = useState<string | null>(null);
+  const [selectedSnippetsByItem, setSelectedSnippetsByItem] = useState<Record<string, string>>({});
+  const [sendbackDraft, setSendbackDraft] = useState<SendbackDraft | null>(null);
+  const [sendbackSubmitting, setSendbackSubmitting] = useState(false);
+  const [overlayNotice, setOverlayNotice] = useState<OverlayNotice | null>(null);
   const pollingTimersRef = useRef<Map<string, number>>(new Map());
   const historyScrollRef = useRef<Map<string, number>>(new Map());
   const overlayHistoryRef = useRef<HTMLDivElement | null>(null);
@@ -213,6 +232,8 @@ export function App({
     setActiveSessionId(sessionId);
     setOverlayOpen(true);
     setConflictSessionId(null);
+    setOverlayNotice(null);
+    setSendbackDraft((previous) => (previous?.sessionId === sessionId ? previous : null));
   };
 
   const handleOverlayClose = () => {
@@ -234,11 +255,94 @@ export function App({
     await startTurnForSession(activeSessionId, prompt);
   };
 
+  const handleSnapshotSelection = (item: HistoryItem, snapshot: string, start: number, end: number) => {
+    const key = buildItemKey(item);
+    if (end <= start) {
+      setSelectedSnippetsByItem((previous) => {
+        if (!(key in previous)) {
+          return previous;
+        }
+        const next = { ...previous };
+        delete next[key];
+        return next;
+      });
+      return;
+    }
+    const selected = snapshot.slice(start, end).trim();
+    setSelectedSnippetsByItem((previous) => ({
+      ...previous,
+      [key]: selected
+    }));
+  };
+
+  const openSendbackDraft = (
+    item: HistoryItem,
+    content: string,
+    mode: "full" | "partial"
+  ) => {
+    if (!activeSessionId) {
+      return;
+    }
+    const normalized = content.trim();
+    if (!normalized) {
+      return;
+    }
+    setOverlayNotice(null);
+    setSendbackDraft({
+      sessionId: activeSessionId,
+      turnId: item.turn_id,
+      traceId: item.trace_id,
+      selectedText: normalized,
+      messageText: normalized,
+      mode
+    });
+  };
+
+  const submitSendback = async () => {
+    if (!sendbackDraft || sendbackSubmitting) {
+      return;
+    }
+    setSendbackSubmitting(true);
+    try {
+      const response = await api.sendback({
+        tenantId,
+        clientId,
+        sessionId: sendbackDraft.sessionId,
+        turnId: sendbackDraft.turnId,
+        traceId: sendbackDraft.traceId,
+        conversationId: `im-conversation-${sendbackDraft.sessionId}`,
+        selectedText: sendbackDraft.selectedText,
+        messageText: sendbackDraft.messageText
+      });
+      setOverlayNotice({
+        kind: "success",
+        message: `Sent to IM (${response.im_message_id ?? response.request_id}).`
+      });
+      setSendbackDraft(null);
+    } catch (error) {
+      if (error instanceof SkillApiError) {
+        setOverlayNotice({
+          kind: "error",
+          code: error.code,
+          message: error.message
+        });
+      } else {
+        setOverlayNotice({
+          kind: "error",
+          code: "SEND_TO_IM_FAILED",
+          message: error instanceof Error ? error.message : "Sendback failed. Please retry."
+        });
+      }
+    } finally {
+      setSendbackSubmitting(false);
+    }
+  };
+
   return (
     <div className="app-shell">
       <header className="top-bar">
         <h1>Chat CUI Web Demo</h1>
-        <p>Phase 4: slash trigger, status card, expanded skill session</p>
+        <p>Phase 5: select, preview, sendback to IM with retry</p>
       </header>
 
       <main className="chat-layout">
@@ -344,6 +448,15 @@ export function App({
               <p>
                 Session: {activeSession.sessionId} | Status: {activeSession.status}
               </p>
+              {overlayNotice && (
+                <p
+                  className={`sendback-banner sendback-banner-${overlayNotice.kind}`}
+                  data-testid="sendback-banner"
+                >
+                  {overlayNotice.code ? `[${overlayNotice.code}] ` : ""}
+                  {overlayNotice.message}
+                </p>
+              )}
             </div>
             <button type="button" onClick={handleOverlayClose}>
               Back to chat
@@ -354,18 +467,119 @@ export function App({
             {activeSession.history.length === 0 && (
               <div className="empty-state">Waiting for session history...</div>
             )}
-            {activeSession.history.map((item) => (
-              <div key={`${item.turn_id}-${item.seq}`} className="history-item">
-                <div className="meta">
-                  <span>{item.turn_id}</span>
-                  <span>{item.seq}</span>
-                  <span>{item.turn_status}</span>
-                  <span>{item.delivery_status}</span>
+            {activeSession.history.map((item) => {
+              const itemKey = buildItemKey(item);
+              const selectedSnippet = selectedSnippetsByItem[itemKey] ?? "";
+              const assistantContent = item.actor === "assistant" && (item.snapshot?.trim().length ?? 0) > 0;
+              return (
+                <div key={itemKey} className="history-item">
+                  <div className="meta">
+                    <span>{item.turn_id}</span>
+                    <span>{item.seq}</span>
+                    <span>{item.turn_status}</span>
+                    <span>{item.delivery_status}</span>
+                  </div>
+                  {assistantContent ? (
+                    <textarea
+                      className="snapshot-view"
+                      value={item.snapshot}
+                      readOnly
+                      onSelect={(event) => {
+                        const current = event.currentTarget;
+                        handleSnapshotSelection(item, current.value, current.selectionStart, current.selectionEnd);
+                      }}
+                    />
+                  ) : (
+                    <p>{item.snapshot}</p>
+                  )}
+                  {assistantContent && (
+                    <div className="sendback-actions">
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => openSendbackDraft(item, item.snapshot, "full")}
+                      >
+                        Send full to IM
+                      </button>
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        disabled={!selectedSnippet}
+                        onClick={() => openSendbackDraft(item, selectedSnippet, "partial")}
+                      >
+                        Use selected text
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <p>{item.snapshot}</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
+          {sendbackDraft && sendbackDraft.sessionId === activeSession.sessionId && (
+            <section className="sendback-panel" data-testid="sendback-preview">
+              <div className="sendback-title">
+                Sendback Preview ({sendbackDraft.mode === "full" ? "full block" : "partial selection"})
+              </div>
+              <textarea
+                data-testid="sendback-edit"
+                value={sendbackDraft.messageText}
+                onChange={(event) => {
+                  const nextText = event.target.value;
+                  setSendbackDraft((previous) =>
+                    previous == null
+                      ? previous
+                      : {
+                          ...previous,
+                          messageText: nextText
+                        }
+                  );
+                }}
+              />
+              {overlayNotice?.kind === "error" && (
+                <p className="sendback-inline-error" data-testid="sendback-inline-error">
+                  {overlayNotice.code ? `[${overlayNotice.code}] ` : ""}
+                  {overlayNotice.message}
+                </p>
+              )}
+              <div className="sendback-buttons">
+                <button
+                  type="button"
+                  data-testid="sendback-confirm-btn"
+                  onClick={() => {
+                    void submitSendback();
+                  }}
+                  disabled={sendbackSubmitting || !sendbackDraft.messageText.trim()}
+                >
+                  {sendbackSubmitting ? "Sending..." : "Confirm send to IM"}
+                </button>
+                {overlayNotice?.kind === "error" && (
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    data-testid="sendback-retry-btn"
+                    onClick={() => {
+                      void submitSendback();
+                    }}
+                    disabled={sendbackSubmitting}
+                  >
+                    Retry send
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => {
+                    setSendbackDraft(null);
+                    setOverlayNotice(null);
+                  }}
+                  disabled={sendbackSubmitting}
+                >
+                  Cancel
+                </button>
+              </div>
+            </section>
+          )}
 
           <footer className="overlay-input">
             <input
@@ -423,3 +637,8 @@ function resolveSummary(items: HistoryItem[], status: CardStatus): string {
 function buildSessionId(): string {
   return `session-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
+
+function buildItemKey(item: HistoryItem): string {
+  return `${item.turn_id}-${item.seq}`;
+}
+

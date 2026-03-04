@@ -25,6 +25,16 @@ export interface TurnAcceptedResponse {
   accepted_at: string;
 }
 
+export interface SendbackResponse {
+  request_id: string;
+  session_id: string;
+  turn_id: string;
+  trace_id: string;
+  send_status: string;
+  im_message_id: string | null;
+  sent_at: string;
+}
+
 export interface SkillSessionViewModel {
   sessionId: string;
   status: CardStatus;
