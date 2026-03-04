@@ -68,15 +68,15 @@ Scope lock: these requirements only cover `pc-agent-plugin` + gateway alignment 
   Completion signals: all three artifacts exist in `.planning/phases/07-pc-agent-message-bridge-opencode-plugin/` and include executable gate/evidence references.
 - [x] **P07-REF-01**: Define a reproducible reference snapshot protocol for `message-bridge-opencode-plugin` used by downstream alignment claims.
   Completion signals: runbook includes required snapshot fields (`reference_repo`, `reference_tag_or_commit`, `snapshot_date_utc`, `diff_scope`) and a reusable record template with `evidence_id`.
-- [ ] **P07-COMPAT-01**: Enforce backward-compatible, additive-only contract alignment between plugin host boundary and gateway-facing bridge behaviors.
+- [x] **P07-COMPAT-01**: Enforce backward-compatible, additive-only contract alignment between plugin host boundary and gateway-facing bridge behaviors.
   Completion signals: compatibility assertions and documented policy show no breaking removals and clear handling for additive fields/events.
-- [ ] **P07-VERSION-01**: Standardize explicit contract-version signaling for key runtime/plugin boundary events involved in alignment evidence.
+- [x] **P07-VERSION-01**: Standardize explicit contract-version signaling for key runtime/plugin boundary events involved in alignment evidence.
   Completion signals: mapping/runbook enumerate versioned events and verification commands that prove version metadata presence.
-- [ ] **P07-GATE-01**: Define a release-blocking phase-07 hard-gate inventory spanning plugin no-drift, host integration, CLI real-chain, and gateway auth/resume checks.
+- [x] **P07-GATE-01**: Define a release-blocking phase-07 hard-gate inventory spanning plugin no-drift, host integration, CLI real-chain, and gateway auth/resume checks.
   Completion signals: runbook and mapping provide concrete command set, expected outputs, and pass/fail gate criteria.
-- [ ] **P07-EVID-01**: Standardize phase-07 acceptance evidence so each claim includes command, date, result, `session_id`, `trace_id`, and `evidence_id`.
+- [x] **P07-EVID-01**: Standardize phase-07 acceptance evidence so each claim includes command, date, result, `session_id`, `trace_id`, and `evidence_id`.
   Completion signals: evidence schema is documented and linked from requirement mapping/checklist entries.
-- [ ] **P07-GOV-01**: Define waiver/deprecation governance requirements with owner accountability and expiry control.
+- [x] **P07-GOV-01**: Define waiver/deprecation governance requirements with owner accountability and expiry control.
   Completion signals: checklist/runbook include `owner`, `status`, waiver reference, expiration policy, and closure rules for temporary exceptions.
 
 ## v2 Requirements
@@ -138,11 +138,11 @@ Scope lock: these requirements only cover `pc-agent-plugin` + gateway alignment 
 | P01.1-DRIFT-01 | Phase 01.1 | Complete |
 | P07-BASE-01 | Phase 7 | Complete |
 | P07-REF-01 | Phase 7 | Complete |
-| P07-COMPAT-01 | Phase 7 | In Progress |
-| P07-VERSION-01 | Phase 7 | In Progress |
-| P07-GATE-01 | Phase 7 | In Progress |
-| P07-EVID-01 | Phase 7 | In Progress |
-| P07-GOV-01 | Phase 7 | In Progress |
+| P07-COMPAT-01 | Phase 7 | Complete |
+| P07-VERSION-01 | Phase 7 | Complete |
+| P07-GATE-01 | Phase 7 | Complete |
+| P07-EVID-01 | Phase 7 | Complete |
+| P07-GOV-01 | Phase 7 | Complete |
 
 **Coverage:**
 - v1 requirements: 23 total
@@ -151,4 +151,4 @@ Scope lock: these requirements only cover `pc-agent-plugin` + gateway alignment 
 
 ---
 *Requirements defined: 2026-03-03*  
-*Last updated: 2026-03-04 during Phase 7 Plan 07-01 execution*
+*Last updated: 2026-03-04 after executing Phase 7 Plan 07-04*
