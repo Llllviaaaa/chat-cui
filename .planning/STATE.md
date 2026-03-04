@@ -91,7 +91,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Decision: Sendback idempotency keys are now server-derived from stable session context plus content fingerprint hash.
 - Decision: Duplicate sendback requests replay persisted sent/failed outcomes before any second IM dispatch.
 - Decision: Legacy sendback rows are backfilled with deterministic `legacy-{request_id}` idempotency keys before unique enforcement.
-- Next pending step: Execute Phase 6 Plan 06-04.
+- Completed: Phase 6 Plan 06-04 with cross-service structured logging taxonomy, deterministic failure envelopes, and observability contract tests.
+- Summary: `.planning/phases/06-reliability-observability-hardening/06-04-SUMMARY.md`
+- Decision: Plugin CLI failures now emit required observability envelope fields while preserving existing auth result envelopes.
+- Decision: Gateway and skill-service persistence failures now share canonical `failure_class + retryable` semantics via typed enums/contracts.
+- Decision: Persistence boundary structured failure logs exclude raw payload text and keep only actionable correlation metadata.
+- Next pending step: Execute Phase 6 Plan 06-05.
 
 ## Next Command
 

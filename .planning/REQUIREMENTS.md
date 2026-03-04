@@ -47,7 +47,7 @@
 ### Demo and Operations
 
 - [x] **DEM-01**: Web UI demo can run the complete flow without depending on native IM client packaging.
-- [ ] **DEM-02**: Logs and metrics can trace one request across plugin, AI-Gateway, and Skill service.
+- [x] **DEM-02**: Logs and metrics can trace one request across plugin, AI-Gateway, and Skill service.
 
 ### Phase 01.1 Architecture Correction (Provisional IDs)
 
@@ -108,7 +108,7 @@
 | IMS-02 | Phase 5 | Complete |
 | IMS-03 | Phase 5 | Complete |
 | DEM-01 | Phase 4 | Complete |
-| DEM-02 | Phase 6 | Pending |
+| DEM-02 | Phase 6 | Complete |
 | P01.1-ARCH-01 | Phase 01.1 | Complete |
 | P01.1-ARCH-02 | Phase 01.1 | Complete |
 | P01.1-ARCH-03 | Phase 01.1 | Complete |
@@ -125,4 +125,4 @@
 
 ---
 *Requirements defined: 2026-03-03*  
-*Last updated: 2026-03-04 after Phase 6 Plan 06-02 execution*
+*Last updated: 2026-03-04 after Phase 6 Plan 06-04 execution*
