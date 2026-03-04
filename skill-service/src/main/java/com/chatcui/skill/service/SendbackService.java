@@ -1,6 +1,8 @@
 package com.chatcui.skill.service;
 
 import com.chatcui.skill.api.dto.SendbackResponse;
+import com.chatcui.skill.observability.FailureClass;
+import com.chatcui.skill.observability.SkillMetricsRecorder;
 import com.chatcui.skill.persistence.mapper.SendbackRecordMapper;
 import com.chatcui.skill.persistence.mapper.TurnRecordMapper;
 import com.chatcui.skill.persistence.model.SendbackRecord;
@@ -26,14 +28,24 @@ public class SendbackService {
     private final SendbackRecordMapper sendbackRecordMapper;
     private final ImMessageGateway imMessageGateway;
     private final Clock clock;
+    private final SkillMetricsRecorder skillMetricsRecorder;
     private String idempotencyHashAlgorithm;
 
     public SendbackService(
             TurnRecordMapper turnRecordMapper,
             SendbackRecordMapper sendbackRecordMapper,
+            ImMessageGateway imMessageGateway,
+            SkillMetricsRecorder skillMetricsRecorder
+    ) {
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, Clock.systemUTC(), "SHA-256", skillMetricsRecorder);
+    }
+
+    SendbackService(
+            TurnRecordMapper turnRecordMapper,
+            SendbackRecordMapper sendbackRecordMapper,
             ImMessageGateway imMessageGateway
     ) {
-        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, Clock.systemUTC(), "SHA-256");
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, Clock.systemUTC(), "SHA-256", SkillMetricsRecorder.noop());
     }
 
     SendbackService(
@@ -42,7 +54,17 @@ public class SendbackService {
             ImMessageGateway imMessageGateway,
             Clock clock
     ) {
-        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, clock, "SHA-256");
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, clock, "SHA-256", SkillMetricsRecorder.noop());
+    }
+
+    SendbackService(
+            TurnRecordMapper turnRecordMapper,
+            SendbackRecordMapper sendbackRecordMapper,
+            ImMessageGateway imMessageGateway,
+            Clock clock,
+            SkillMetricsRecorder skillMetricsRecorder
+    ) {
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, clock, "SHA-256", skillMetricsRecorder);
     }
 
     SendbackService(
@@ -52,10 +74,22 @@ public class SendbackService {
             Clock clock,
             String idempotencyHashAlgorithm
     ) {
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, clock, idempotencyHashAlgorithm, SkillMetricsRecorder.noop());
+    }
+
+    SendbackService(
+            TurnRecordMapper turnRecordMapper,
+            SendbackRecordMapper sendbackRecordMapper,
+            ImMessageGateway imMessageGateway,
+            Clock clock,
+            String idempotencyHashAlgorithm,
+            SkillMetricsRecorder skillMetricsRecorder
+    ) {
         this.turnRecordMapper = turnRecordMapper;
         this.sendbackRecordMapper = sendbackRecordMapper;
         this.imMessageGateway = imMessageGateway;
         this.clock = clock;
+        this.skillMetricsRecorder = skillMetricsRecorder == null ? SkillMetricsRecorder.noop() : skillMetricsRecorder;
         this.idempotencyHashAlgorithm = normalizeHashAlgorithm(idempotencyHashAlgorithm);
     }
 
@@ -65,6 +99,7 @@ public class SendbackService {
     }
 
     public SendbackResponse send(SendCommand command) {
+        long startedNanos = System.nanoTime();
         validate(command);
 
         if (!turnRecordMapper.existsTurnInSession(
@@ -92,6 +127,9 @@ public class SendbackService {
         String idempotencyKey = deriveIdempotencyKey(command, selectedText, messageText);
         Optional<SendbackRecord> existing = sendbackRecordMapper.findByIdempotencyKey(idempotencyKey);
         if (existing.isPresent()) {
+            boolean retryable = "failed".equalsIgnoreCase(existing.get().sendStatus())
+                    && FailureClass.SENDBACK.retryableDefault();
+            recordSendbackMetric("dedup", retryable, startedNanos);
             return replayExistingResult(existing.get(), command.sessionId(), command.turnId());
         }
 
@@ -124,6 +162,7 @@ public class SendbackService {
                     null,
                     null
             ));
+            recordSendbackMetric("success", false, startedNanos);
             return new SendbackResponse(
                     requestId,
                     command.sessionId(),
@@ -151,6 +190,7 @@ public class SendbackService {
                     ex.getMessage(),
                     null
             ));
+            recordSendbackMetric("failure", FailureClass.SENDBACK.retryableDefault(), startedNanos);
             throw new SendbackFailedException(ex.code(), ex.getMessage());
         }
     }
@@ -244,6 +284,14 @@ public class SendbackService {
             return "SHA-256";
         }
         return hashAlgorithm.trim();
+    }
+
+    private void recordSendbackMetric(String outcome, boolean retryable, long startedNanos) {
+        skillMetricsRecorder.recordSendbackOutcome(
+                outcome,
+                FailureClass.SENDBACK,
+                retryable,
+                System.nanoTime() - startedNanos);
     }
 
     private void requireValue(String value, String field) {
