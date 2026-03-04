@@ -27,7 +27,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 3 | Skill Service Persistence APIs | Complete |
 | 4 | Interaction Flow + Web UI Demo | Complete |
 | 5 | Sendback to IM | Complete |
-| 6 | Reliability + Observability Hardening | Pending |
+| 6 | Reliability + Observability Hardening | In Progress |
 | 7 | PC Agent Plugin Architecture Alignment | Pending |
 
 ## Accumulated Context
@@ -81,7 +81,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Summary: `.planning/phases/06-reliability-observability-hardening/06-01-SUMMARY.md`
 - Decision: Reconnect terminal failures now expose deterministic `reason_code + retryable + next_action` envelope via `runtime.failed`.
 - Decision: Sequence gap handling now emits compensation signals and gates continuation until contiguous `seq` recovery.
-- Next pending step: Execute Phase 6 Plan 06-02.
+- Completed: Phase 6 Plan 06-02 with gateway resume coordinator, publish-path anomaly gating, and deterministic terminal failure envelopes
+- Summary: `.planning/phases/06-reliability-observability-hardening/06-02-SUMMARY.md`
+- Decision: Gateway publish now gates persistence forwarding through deterministic resume decisions before side effects.
+- Decision: Resume anomaly controls now emit stable `reason_code + next_action` metadata for machine handling.
+- Decision: Forwarding/status tuple keys include topic to isolate compensation control events from normal stream tuples.
+- Next pending step: Execute Phase 6 Plan 06-03.
 
 ## Next Command
 
