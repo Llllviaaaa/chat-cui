@@ -20,6 +20,7 @@
     "verify:no-drift": "node ./scripts/validate-no-drift.mjs && vitest run test/architecture",
     "verify:phase-01.1": "npm run verify:no-drift && npm run test:auth-signer && npm run test:auth-errors && npm run test:security && npm run test:plugin-mode-integration && npm run test:cli-bootstrap && npm run test:cli-real-chain",
     "verify:phase-02": "npm run verify:no-drift && npm run test:contracts && npm run test:bridge-runtime && npm run test:host-lifecycle && npm run test:host-events && npm run test:cli-bootstrap && npm run test:cli-real-chain",
+    "verify:phase-07": "npm run verify:no-drift && npm run test:plugin-mode-integration && npm run test:cli-real-chain && mvn -f ..\\pom.xml -pl gateway \"-Dtest=AuthServiceTest,ErrorResponseFactoryTest,WsAuthHandshakeInterceptorTest,AuthEntryIntegrationTest,WsAuthFailureIntegrationTest,ResumeCoordinatorTest\" test",
     "cli": "tsx src/cli/index.ts"
   },
   "devDependencies": {
