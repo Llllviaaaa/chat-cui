@@ -11,7 +11,7 @@
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
-- Completed phases: 4 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04)
+- Completed phases: 5 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04, Phase 4 verified on 2026-03-04)
 
 ## Phase Overview
 
@@ -106,9 +106,12 @@ Plans:
 
 ## Phase 4: Interaction Flow + Web UI Demo
 
+**Status:** Complete (verified 2026-03-04)
+
 **Goal:** Demonstrate complete user interaction loop in web-based client experience.
 
 **Requirements:** CMD-01, CMD-02, CMD-03, SKL-01, SKL-02, SKL-03, DEM-01
+**Plans:** 4/4 plans complete
 
 **Success Criteria:**
 1. Typing `/` reveals SKILL selector with Local OpenCode option.
@@ -116,6 +119,12 @@ Plans:
 3. Expand action opens Skill session view overlaying chat and supports continued conversation.
 4. UI state remains consistent between in-chat status card and expanded Skill client view.
 5. Web UI demo runs end-to-end against gateway/skill-service interfaces without native IM client dependency.
+
+Plans:
+- [x] 04-01-PLAN.md - skill-service demo turn acceptance API and async status progression
+- [x] 04-02-PLAN.md - standalone web-demo slash trigger and immediate status card flow
+- [x] 04-03-PLAN.md - overlay continuation and cross-view session-state synchronization
+- [x] 04-04-PLAN.md - acceptance evidence, verification report, and phase tracking closure
 
 ## Phase 5: Sendback to IM
 
@@ -157,5 +166,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing and verifying Phase 3*
+*Last updated: 2026-03-04 after executing and verifying Phase 4*
 

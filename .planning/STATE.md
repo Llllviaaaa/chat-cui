@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 4 - Interaction Flow + Web UI Demo
+**Current focus:** Phase 5 - Sendback to IM
 
 ## Artifacts
 
@@ -25,7 +25,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 01.1 | PC Agent plugin architecture alignment | Complete |
 | 2 | PC Agent Bridge Core | Complete |
 | 3 | Skill Service Persistence APIs | Complete |
-| 4 | Interaction Flow + Web UI Demo | Pending |
+| 4 | Interaction Flow + Web UI Demo | Complete |
 | 5 | Sendback to IM | Pending |
 | 6 | Reliability + Observability Hardening | Pending |
 | 7 | PC Agent Plugin Architecture Alignment | Pending |
@@ -63,8 +63,14 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Verification report: `.planning/phases/03-skill-service-persistence-apis/03-VERIFICATION.md`
 - Acceptance evidence: `.planning/phases/03-skill-service-persistence-apis/03-ACCEPTANCE-EVIDENCE.md`
 - Decision: Phase 3 requirements `SVC-01`, `SVC-02`, `SVC-03` verified and closed.
-- Next pending step: Start Phase 4 context discussion
+- Completed: Phase 4 plans 04-01..04-04 with web-demo interaction flow and closure artifacts
+- Summaries: `.planning/phases/04-interaction-flow-web-ui-demo/04-01-SUMMARY.md`, `.planning/phases/04-interaction-flow-web-ui-demo/04-02-SUMMARY.md`, `.planning/phases/04-interaction-flow-web-ui-demo/04-03-SUMMARY.md`, `.planning/phases/04-interaction-flow-web-ui-demo/04-04-SUMMARY.md`
+- Verification report: `.planning/phases/04-interaction-flow-web-ui-demo/04-VERIFICATION.md`
+- Acceptance evidence: `.planning/phases/04-interaction-flow-web-ui-demo/04-ACCEPTANCE-EVIDENCE.md`
+- Decision: Slash trigger remains first-character gated (`/`) to avoid accidental skill invocation.
+- Decision: Keep one-running-session UX guard with overlay/card state convergence by session history polling.
+- Next pending step: Start Phase 5 context discussion
 
 ## Next Command
 
-`$gsd-discuss-phase 4`
+`$gsd-discuss-phase 5`

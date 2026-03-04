@@ -7,15 +7,15 @@
 
 ### Command Invocation
 
-- [ ] **CMD-01**: User can type `/` in chat input and see a `SKILL` selector including `Local OpenCode`.
-- [ ] **CMD-02**: User can choose `Local OpenCode`, enter a question, and submit generation from the trigger panel.
-- [ ] **CMD-03**: User receives immediate request acceptance feedback after clicking generate.
+- [x] **CMD-01**: User can type `/` in chat input and see a `SKILL` selector including `Local OpenCode`.
+- [x] **CMD-02**: User can choose `Local OpenCode`, enter a question, and submit generation from the trigger panel.
+- [x] **CMD-03**: User receives immediate request acceptance feedback after clicking generate.
 
 ### Skill Session UX
 
-- [ ] **SKL-01**: User sees a one-line running status card in chat after generation starts.
-- [ ] **SKL-02**: User can click expand on the status card to open Skill client view over the chat area.
-- [ ] **SKL-03**: User can continue multi-turn conversation with OpenCode in the Skill client.
+- [x] **SKL-01**: User sees a one-line running status card in chat after generation starts.
+- [x] **SKL-02**: User can click expand on the status card to open Skill client view over the chat area.
+- [x] **SKL-03**: User can continue multi-turn conversation with OpenCode in the Skill client.
 - [ ] **SKL-04**: User can select one returned text block as sendback candidate to IM.
 
 ### Bridge and Connectivity
@@ -46,7 +46,7 @@
 
 ### Demo and Operations
 
-- [ ] **DEM-01**: Web UI demo can run the complete flow without depending on native IM client packaging.
+- [x] **DEM-01**: Web UI demo can run the complete flow without depending on native IM client packaging.
 - [ ] **DEM-02**: Logs and metrics can trace one request across plugin, AI-Gateway, and Skill service.
 
 ### Phase 01.1 Architecture Correction (Provisional IDs)
@@ -86,12 +86,12 @@
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CMD-01 | Phase 4 | Pending |
-| CMD-02 | Phase 4 | Pending |
-| CMD-03 | Phase 4 | Pending |
-| SKL-01 | Phase 4 | Pending |
-| SKL-02 | Phase 4 | Pending |
-| SKL-03 | Phase 4 | Pending |
+| CMD-01 | Phase 4 | Complete |
+| CMD-02 | Phase 4 | Complete |
+| CMD-03 | Phase 4 | Complete |
+| SKL-01 | Phase 4 | Complete |
+| SKL-02 | Phase 4 | Complete |
+| SKL-03 | Phase 4 | Complete |
 | SKL-04 | Phase 5 | Pending |
 | BRG-01 | Phase 2 | Complete |
 | BRG-02 | Phase 2 | Complete |
@@ -107,7 +107,7 @@
 | IMS-01 | Phase 5 | Pending |
 | IMS-02 | Phase 5 | Pending |
 | IMS-03 | Phase 5 | Pending |
-| DEM-01 | Phase 4 | Pending |
+| DEM-01 | Phase 4 | Complete |
 | DEM-02 | Phase 6 | Pending |
 | P01.1-ARCH-01 | Phase 01.1 | Complete |
 | P01.1-ARCH-02 | Phase 01.1 | Complete |
@@ -125,4 +125,4 @@
 
 ---
 *Requirements defined: 2026-03-03*  
-*Last updated: 2026-03-04 after Phase 3 execution and verification pass*
+*Last updated: 2026-03-04 after Phase 4 execution and verification pass*
