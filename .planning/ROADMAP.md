@@ -98,7 +98,7 @@ Plans:
 
 Plans:
 - [x] 03-01-PLAN.md - skill-service module/bootstrap, DTO contracts, and MySQL 5.7 schema baseline
-- [ ] 03-02-PLAN.md - skill-service turn persistence and session history query APIs
+- [x] 03-02-PLAN.md - skill-service turn persistence and session history query APIs
 - [ ] 03-03-PLAN.md - gateway forwarding path with non-blocking retry and delivery-status semantics
 - [ ] 03-04-PLAN.md - cross-module verification evidence and phase tracking closure
 
@@ -155,5 +155,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing Phase 3 Plan 03-01*
+*Last updated: 2026-03-04 after executing Phase 3 Plan 03-02*
 

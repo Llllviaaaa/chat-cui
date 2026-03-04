@@ -50,7 +50,11 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Summary: `.planning/phases/03-skill-service-persistence-apis/03-01-SUMMARY.md`
 - Decision: Keep actor/event enums as uppercase Java constants with lowercase JSON wire values
 - Decision: Enforce required migration keys/indexes via schema contract tests
-- Next pending step: Execute `03-02-PLAN.md`
+- Completed: Phase 3 Plan 03-02 with idempotent turn persistence and deterministic session history APIs
+- Summary: `.planning/phases/03-skill-service-persistence-apis/03-02-SUMMARY.md`
+- Decision: Map delta/final events to `in_progress + pending`, and completed/error events to terminal delivery states
+- Decision: Expose deterministic session history API errors (`INVALID_REQUEST`, `INVALID_CURSOR`, `SESSION_NOT_FOUND`)
+- Next pending step: Execute `03-03-PLAN.md`
 
 ## Next Command
 
