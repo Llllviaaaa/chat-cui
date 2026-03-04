@@ -1,5 +1,54 @@
 export type RuntimeHealth = "healthy" | "degraded" | "down";
 
+export const FAILURE_CLASS_VALUES = [
+  "auth",
+  "bridge",
+  "persistence",
+  "sendback",
+  "unknown"
+] as const;
+
+export type FailureClass = (typeof FAILURE_CLASS_VALUES)[number];
+
+export const FAILURE_CLASS_RETRYABLE_DEFAULT: Record<FailureClass, boolean> = {
+  auth: false,
+  bridge: true,
+  persistence: true,
+  sendback: true,
+  unknown: false
+};
+
+export const FAILURE_ENVELOPE_REQUIRED_FIELDS = [
+  "tenant_id",
+  "client_id",
+  "session_id",
+  "turn_id",
+  "seq",
+  "trace_id",
+  "error_code",
+  "component",
+  "status",
+  "failure_class",
+  "retryable"
+] as const;
+
+export type FailureEnvelopeRequiredField =
+  (typeof FAILURE_ENVELOPE_REQUIRED_FIELDS)[number];
+
+export interface FailureEnvelope {
+  tenant_id: string;
+  client_id: string;
+  session_id: string;
+  turn_id: string;
+  seq: number;
+  trace_id: string;
+  error_code: string;
+  component: string;
+  status: string;
+  failure_class: FailureClass;
+  retryable: boolean;
+}
+
 export interface ResumeAnchor {
   session_id: string;
   turn_id: string;
