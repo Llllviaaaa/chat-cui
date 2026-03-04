@@ -1,6 +1,8 @@
 package com.chatcui.gateway.persistence;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.chatcui.gateway.observability.FailureClass;
@@ -84,6 +86,39 @@ class SkillPersistenceForwarderTest {
         assertTrue(first.accepted());
         assertTrue(duplicate.duplicate());
         assertEquals(1, attempts.get());
+    }
+
+    @Test
+    void persistenceFailureEmitsStructuredFailureEnvelopeWithoutPayloadLeakage() throws Exception {
+        AtomicReference<Map<String, Object>> capturedFailure = new AtomicReference<>();
+        CountDownLatch retryLatch = new CountDownLatch(1);
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> {
+                    throw new IllegalStateException("transport down");
+                },
+                (event, error) -> retryLatch.countDown(),
+                SkillPersistenceForwarder.DeliveryStatusSink.noop(),
+                Executors.newSingleThreadExecutor(),
+                objectMapper,
+                capturedFailure::set);
+
+        forwarder.forward(sampleEvent(11L));
+
+        assertTrue(retryLatch.await(1, TimeUnit.SECONDS));
+        Map<String, Object> envelope = capturedFailure.get();
+        assertNotNull(envelope);
+        assertEquals("tenant-a", envelope.get("tenant_id"));
+        assertEquals("client-a", envelope.get("client_id"));
+        assertEquals("session-a", envelope.get("session_id"));
+        assertEquals("turn-a", envelope.get("turn_id"));
+        assertEquals(11, envelope.get("seq"));
+        assertEquals("trace-a", envelope.get("trace_id"));
+        assertEquals("PERSISTENCE_FORWARD_FAILED", envelope.get("error_code"));
+        assertEquals("gateway.persistence.forwarder", envelope.get("component"));
+        assertEquals("failed", envelope.get("status"));
+        assertEquals("persistence", envelope.get("failure_class"));
+        assertEquals(Boolean.TRUE, envelope.get("retryable"));
+        assertFalse(envelope.containsKey("payload"));
     }
 
     private SkillTurnForwardEvent sampleEvent(long seq) {

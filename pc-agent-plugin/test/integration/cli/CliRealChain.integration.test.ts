@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   FAILURE_CLASS_VALUES,
-  FAILURE_ENVELOPE_REQUIRED_FIELDS
+  FAILURE_ENVELOPE_REQUIRED_FIELDS,
+  type FailureEnvelope
 } from "../../../src/core/events/PluginEvents";
 import { runSession } from "../../../src/cli/commands/runSession";
 
@@ -97,6 +98,25 @@ describe("CliRealChain integration", () => {
     }
     expect(result.error.error_code).toBe("AUTH_V1_MISSING_CREDENTIAL");
     expect(result.markers).toContain("real_chain_rejected");
+    const envelope = parseFailureEnvelope(logs.error);
+    expect(envelope).toMatchObject({
+      tenant_id: "tenant-a",
+      client_id: "client-a",
+      session_id: "session-test",
+      turn_id: "turn-unknown",
+      seq: 0,
+      trace_id: "trace-test",
+      error_code: "AUTH_V1_MISSING_CREDENTIAL",
+      component: "plugin.cli.run-session",
+      status: "failed",
+      failure_class: "auth",
+      retryable: false
+    });
+    expect(Object.keys(envelope).sort()).toEqual(
+      [...FAILURE_ENVELOPE_REQUIRED_FIELDS].sort()
+    );
+    expect(logs.error.join(" ")).not.toContain("selected_text");
+    expect(logs.error.join(" ")).not.toContain("payload");
   });
 
   it("rejects mock-only execution by requiring CHATCUI_REAL_CHAIN=true", async () => {
@@ -116,6 +136,10 @@ describe("CliRealChain integration", () => {
     }
     expect(result.error.error_code).toBe("AUTH_V1_PERMISSION_DENIED");
     expect(logs.error.join(" ")).toContain("AUTH_V1_PERMISSION_DENIED");
+    const envelope = parseFailureEnvelope(logs.error);
+    expect(envelope.failure_class).toBe("auth");
+    expect(envelope.retryable).toBe(false);
+    expect(envelope.status).toBe("failed");
   });
 
   it("runs one CLI session on configured real-chain path", async () => {
@@ -144,3 +168,10 @@ describe("CliRealChain integration", () => {
     expect(logs.info.join(" ")).not.toContain("[plugin-event] runtime.failed");
   });
 });
+
+function parseFailureEnvelope(messages: string[]): FailureEnvelope {
+  if (!messages.length) {
+    throw new Error("Expected at least one structured failure log message");
+  }
+  return JSON.parse(messages[0]) as FailureEnvelope;
+}
