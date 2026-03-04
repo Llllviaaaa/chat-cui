@@ -4,8 +4,15 @@ import com.chatcui.gateway.observability.BridgeMetricsRegistry;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.chatcui.gateway.relay.RelayEnvelope;
+import com.chatcui.gateway.relay.RelayPublisher;
+import com.chatcui.gateway.routing.RouteOwnershipRecord;
+import com.chatcui.gateway.routing.RouteOwnershipStore;
 import java.util.Locale;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BridgePersistencePublisher {
     private static final System.Logger LOGGER = System.getLogger(BridgePersistencePublisher.class.getName());
@@ -20,23 +27,48 @@ public class BridgePersistencePublisher {
     private final DeliveryStatusReporter statusReporter;
     private final ResumeCoordinator resumeCoordinator;
     private final BridgeMetricsRegistry metricsRegistry;
+    private final RouteOwnershipStore routeOwnershipStore;
+    private final RelayPublisher relayPublisher;
+    private final String gatewayOwnerId;
+    private final Set<String> emittedRelayTuples = ConcurrentHashMap.newKeySet();
 
     public BridgePersistencePublisher(SkillPersistenceForwarder forwarder, DeliveryStatusReporter statusReporter) {
-        this(forwarder, statusReporter, new ResumeCoordinator(), BridgeMetricsRegistry.noop());
+        this(
+                forwarder,
+                statusReporter,
+                new ResumeCoordinator(),
+                BridgeMetricsRegistry.noop(),
+                null,
+                null,
+                null);
     }
 
     public BridgePersistencePublisher(
             SkillPersistenceForwarder forwarder,
             DeliveryStatusReporter statusReporter,
             BridgeMetricsRegistry metricsRegistry) {
-        this(forwarder, statusReporter, new ResumeCoordinator(), metricsRegistry);
+        this(
+                forwarder,
+                statusReporter,
+                new ResumeCoordinator(),
+                metricsRegistry,
+                null,
+                null,
+                null);
     }
 
     BridgePersistencePublisher(
             SkillPersistenceForwarder forwarder,
             DeliveryStatusReporter statusReporter,
             ResumeCoordinator resumeCoordinator) {
-        this(forwarder, statusReporter, resumeCoordinator, BridgeMetricsRegistry.noop());
+        this(
+                forwarder,
+                statusReporter,
+                resumeCoordinator,
+                BridgeMetricsRegistry.noop(),
+                null,
+                null,
+                null);
     }
 
     BridgePersistencePublisher(
@@ -44,10 +76,31 @@ public class BridgePersistencePublisher {
             DeliveryStatusReporter statusReporter,
             ResumeCoordinator resumeCoordinator,
             BridgeMetricsRegistry metricsRegistry) {
-        this.forwarder = forwarder;
-        this.statusReporter = statusReporter;
-        this.resumeCoordinator = resumeCoordinator;
+        this(
+                forwarder,
+                statusReporter,
+                resumeCoordinator,
+                metricsRegistry,
+                null,
+                null,
+                null);
+    }
+
+    BridgePersistencePublisher(
+            SkillPersistenceForwarder forwarder,
+            DeliveryStatusReporter statusReporter,
+            ResumeCoordinator resumeCoordinator,
+            BridgeMetricsRegistry metricsRegistry,
+            RouteOwnershipStore routeOwnershipStore,
+            RelayPublisher relayPublisher,
+            String gatewayOwnerId) {
+        this.forwarder = Objects.requireNonNull(forwarder, "forwarder must not be null");
+        this.statusReporter = Objects.requireNonNull(statusReporter, "statusReporter must not be null");
+        this.resumeCoordinator = Objects.requireNonNull(resumeCoordinator, "resumeCoordinator must not be null");
         this.metricsRegistry = metricsRegistry == null ? BridgeMetricsRegistry.noop() : metricsRegistry;
+        this.routeOwnershipStore = routeOwnershipStore;
+        this.relayPublisher = relayPublisher;
+        this.gatewayOwnerId = normalizeOptional(gatewayOwnerId);
     }
 
     public void publish(String topic, SkillTurnForwardEvent event) {
@@ -63,17 +116,17 @@ public class BridgePersistencePublisher {
         recordDecisionMetrics(decision);
 
         switch (decision.outcome()) {
-            case CONTINUE -> forwardAccepted(event);
+            case CONTINUE -> forwardWithRouteAwareness(event);
             case DROP_DUPLICATE -> log("duplicate dropped", decision, event);
             case COMPENSATE_GAP -> {
                 SkillTurnForwardEvent compensation = compensateEvent(event, decision);
                 log("gap compensation emitted", decision, compensation);
-                forwardAccepted(compensation);
+                forwardWithRouteAwareness(compensation);
             }
             case TERMINAL_FAILURE -> {
                 SkillTurnForwardEvent terminal = terminalFailureEvent(event, decision);
                 log("terminal resume failure emitted", decision, terminal);
-                forwardAccepted(terminal);
+                forwardWithRouteAwareness(terminal);
             }
         }
     }
@@ -96,6 +149,52 @@ public class BridgePersistencePublisher {
     private void forwardAccepted(SkillTurnForwardEvent event) {
         statusReporter.pending(event);
         forwarder.forward(event);
+    }
+
+    private void forwardWithRouteAwareness(SkillTurnForwardEvent event) {
+        Optional<RouteOwnershipRecord> routeRecord = loadRouteRecord(event);
+        if (routeRecord.isPresent() && shouldRelay(routeRecord.get())) {
+            publishFirstHopRelay(routeRecord.get(), event);
+            return;
+        }
+        forwardAccepted(event);
+    }
+
+    private Optional<RouteOwnershipRecord> loadRouteRecord(SkillTurnForwardEvent event) {
+        if (routeOwnershipStore == null || relayPublisher == null || gatewayOwnerId == null) {
+            return Optional.empty();
+        }
+        return routeOwnershipStore.load(event.tenantId(), event.sessionId());
+    }
+
+    private boolean shouldRelay(RouteOwnershipRecord routeRecord) {
+        return !routeRecord.gatewayOwner().equals(gatewayOwnerId);
+    }
+
+    private void publishFirstHopRelay(RouteOwnershipRecord routeRecord, SkillTurnForwardEvent event) {
+        RelayEnvelope envelope = RelayEnvelope.firstHop(event, routeRecord, gatewayOwnerId);
+        if (!emittedRelayTuples.add(envelope.dedupeKey())) {
+            LOGGER.log(
+                    System.Logger.Level.INFO,
+                    "relay duplicate suppressed: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
+                    envelope.dedupeKey(),
+                    envelope.sessionId(),
+                    envelope.turnId(),
+                    envelope.seq(),
+                    envelope.topic());
+            return;
+        }
+        RelayPublisher.PublishReceipt receipt = relayPublisher.publishFirstHop(envelope);
+        if (!receipt.accepted()) {
+            LOGGER.log(
+                    System.Logger.Level.INFO,
+                    "relay duplicate reported by publisher: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
+                    envelope.dedupeKey(),
+                    envelope.sessionId(),
+                    envelope.turnId(),
+                    envelope.seq(),
+                    envelope.topic());
+        }
     }
 
     private SkillTurnForwardEvent compensateEvent(SkillTurnForwardEvent source, ResumeDecision decision) {
@@ -151,5 +250,13 @@ public class BridgePersistencePublisher {
             return number.longValue();
         }
         return fallback;
+    }
+
+    private String normalizeOptional(String value) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        return normalized.isEmpty() ? null : normalized;
     }
 }
