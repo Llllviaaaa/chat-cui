@@ -1,5 +1,6 @@
 package com.chatcui.gateway.runtime;
 
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
@@ -18,18 +19,35 @@ public class BridgePersistencePublisher {
     private final SkillPersistenceForwarder forwarder;
     private final DeliveryStatusReporter statusReporter;
     private final ResumeCoordinator resumeCoordinator;
+    private final BridgeMetricsRegistry metricsRegistry;
 
     public BridgePersistencePublisher(SkillPersistenceForwarder forwarder, DeliveryStatusReporter statusReporter) {
-        this(forwarder, statusReporter, new ResumeCoordinator());
+        this(forwarder, statusReporter, new ResumeCoordinator(), BridgeMetricsRegistry.noop());
+    }
+
+    public BridgePersistencePublisher(
+            SkillPersistenceForwarder forwarder,
+            DeliveryStatusReporter statusReporter,
+            BridgeMetricsRegistry metricsRegistry) {
+        this(forwarder, statusReporter, new ResumeCoordinator(), metricsRegistry);
     }
 
     BridgePersistencePublisher(
             SkillPersistenceForwarder forwarder,
             DeliveryStatusReporter statusReporter,
             ResumeCoordinator resumeCoordinator) {
+        this(forwarder, statusReporter, resumeCoordinator, BridgeMetricsRegistry.noop());
+    }
+
+    BridgePersistencePublisher(
+            SkillPersistenceForwarder forwarder,
+            DeliveryStatusReporter statusReporter,
+            ResumeCoordinator resumeCoordinator,
+            BridgeMetricsRegistry metricsRegistry) {
         this.forwarder = forwarder;
         this.statusReporter = statusReporter;
         this.resumeCoordinator = resumeCoordinator;
+        this.metricsRegistry = metricsRegistry == null ? BridgeMetricsRegistry.noop() : metricsRegistry;
     }
 
     public void publish(String topic, SkillTurnForwardEvent event) {
@@ -42,6 +60,7 @@ public class BridgePersistencePublisher {
                 event.turnId(),
                 event.seq(),
                 event.clientId());
+        recordDecisionMetrics(decision);
 
         switch (decision.outcome()) {
             case CONTINUE -> forwardAccepted(event);
@@ -57,6 +76,21 @@ public class BridgePersistencePublisher {
                 forwardAccepted(terminal);
             }
         }
+    }
+
+    private void recordDecisionMetrics(ResumeDecision decision) {
+        boolean retryable = decision.outcome() != ResumeDecision.Outcome.TERMINAL_FAILURE;
+        metricsRegistry.recordBridgeResumeOutcome(resumeOutcomeTag(decision.outcome()), retryable);
+        metricsRegistry.recordBridgeReconnectOutcome(retryable ? "resumed" : "failed", retryable);
+    }
+
+    private String resumeOutcomeTag(ResumeDecision.Outcome outcome) {
+        return switch (outcome) {
+            case CONTINUE -> "continue";
+            case DROP_DUPLICATE -> "dropped_duplicate";
+            case COMPENSATE_GAP -> "compensate_gap";
+            case TERMINAL_FAILURE -> "terminal_failure";
+        };
     }
 
     private void forwardAccepted(SkillTurnForwardEvent event) {

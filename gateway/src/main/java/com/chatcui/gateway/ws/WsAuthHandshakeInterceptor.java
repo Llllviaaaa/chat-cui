@@ -6,14 +6,24 @@ import com.chatcui.gateway.auth.model.AuthErrorResponse;
 import com.chatcui.gateway.auth.model.AuthPrincipal;
 import com.chatcui.gateway.auth.model.AuthRequest;
 import com.chatcui.gateway.auth.model.AuthResult;
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
 
 public class WsAuthHandshakeInterceptor {
     private final AuthService authService;
     private final ErrorResponseFactory errorResponseFactory;
+    private final BridgeMetricsRegistry metricsRegistry;
 
     public WsAuthHandshakeInterceptor(AuthService authService, ErrorResponseFactory errorResponseFactory) {
+        this(authService, errorResponseFactory, BridgeMetricsRegistry.noop());
+    }
+
+    public WsAuthHandshakeInterceptor(
+            AuthService authService,
+            ErrorResponseFactory errorResponseFactory,
+            BridgeMetricsRegistry metricsRegistry) {
         this.authService = authService;
         this.errorResponseFactory = errorResponseFactory;
+        this.metricsRegistry = metricsRegistry == null ? BridgeMetricsRegistry.noop() : metricsRegistry;
     }
 
     public HandshakeDecision beforeHandshake(AuthRequest request) {
@@ -21,6 +31,7 @@ public class WsAuthHandshakeInterceptor {
         if (result.isSuccess()) {
             return HandshakeDecision.accept(result.principal());
         }
+        metricsRegistry.recordAuthFailure(result.failureCode());
         AuthErrorResponse response = errorResponseFactory.toResponse(
                 result.failureCode(),
                 request == null ? "" : request.traceId(),
