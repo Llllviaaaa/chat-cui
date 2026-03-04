@@ -109,4 +109,25 @@
         ORDER BY created_at ASC, turn_id ASC
         LIMIT #{limit}
     </select>
+
+    <select id="existsSession" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM skill_turn_snapshot
+            WHERE tenant_id = #{tenantId}
+              AND client_id = #{clientId}
+              AND session_id = #{sessionId}
+        )
+    </select>
+
+    <select id="existsTurnInSession" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM skill_turn_snapshot
+            WHERE tenant_id = #{tenantId}
+              AND client_id = #{clientId}
+              AND session_id = #{sessionId}
+              AND turn_id = #{turnId}
+        )
+    </select>
 </mapper>

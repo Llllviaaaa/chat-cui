@@ -30,4 +30,17 @@ public interface TurnRecordMapper {
             @Param("cursorTurnId") String cursorTurnId,
             @Param("limit") int limit
     );
+
+    boolean existsSession(
+            @Param("tenantId") String tenantId,
+            @Param("clientId") String clientId,
+            @Param("sessionId") String sessionId
+    );
+
+    boolean existsTurnInSession(
+            @Param("tenantId") String tenantId,
+            @Param("clientId") String clientId,
+            @Param("sessionId") String sessionId,
+            @Param("turnId") String turnId
+    );
 }

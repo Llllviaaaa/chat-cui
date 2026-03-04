@@ -26,7 +26,10 @@ class SessionHistoryControllerIntegrationTest {
     @BeforeEach
     void setUp() {
         queryService = mock(SessionHistoryQueryService.class);
-        mockMvc = MockMvcBuilders.standaloneSetup(new SessionHistoryController(queryService)).build();
+        mockMvc = MockMvcBuilders
+                .standaloneSetup(new SessionHistoryController(queryService))
+                .setControllerAdvice(new SessionHistoryExceptionHandler())
+                .build();
     }
 
     @Test
