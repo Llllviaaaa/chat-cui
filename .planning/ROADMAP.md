@@ -156,7 +156,7 @@ Plans:
 
 **Requirements:** BRG-04, DEM-02
 
-**Plans:** 6/6 plans executed
+**Plans:** 7/7 plans complete
 
 **Success Criteria:**
 1. Connection interruption scenarios can auto-recover or fail fast with clear retry semantics.
@@ -171,6 +171,7 @@ Plans:
   - [x] 06-04-PLAN.md - cross-service structured logging contract with shared taxonomy and deterministic failure envelope
   - [x] 06-05-PLAN.md - low-cardinality gateway/skill metrics wiring and observability baseline runbook
   - [x] 06-06-PLAN.md - phase verification evidence and tracker synchronization closure
+  - [x] 06-07-PLAN.md - gap closure for runtime bridge/auth metrics wiring and integration-path observability proof
 
 ## Phase 7: PC Agent Plugin Architecture Alignment
 
@@ -189,5 +190,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing Phase 6 Plan 06-06*
+*Last updated: 2026-03-04 after executing Phase 6 Plan 06-07*
 

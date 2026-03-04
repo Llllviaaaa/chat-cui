@@ -105,6 +105,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Acceptance evidence: `.planning/phases/06-reliability-observability-hardening/06-ACCEPTANCE-EVIDENCE.md`
 - Verification report: `.planning/phases/06-reliability-observability-hardening/06-VERIFICATION.md`
 - Decision: Phase 6 requirement closure is now audit-backed for `BRG-04` reconnect/resume reliability and `DEM-02` cross-service traceability.
+- Completed: Phase 6 Plan 06-07 with runtime reconnect/resume and auth failure metric wiring plus integration proof closure.
+- Summary: `.planning/phases/06-reliability-observability-hardening/06-07-SUMMARY.md`
+- Decision: Resume decisions now emit both `chatcui.gateway.bridge.resume.outcomes` and mapped reconnect health counters directly from gateway runtime publish flow.
+- Decision: Gateway auth deny/reject paths now emit `chatcui.gateway.auth.outcomes` with canonical low-cardinality outcome and retryability tags.
 - Next pending step: Plan Phase 7 implementation breakdown.
 
 ## Next Command
