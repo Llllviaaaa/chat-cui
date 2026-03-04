@@ -4,6 +4,7 @@ import com.chatcui.gateway.observability.BridgeMetricsRegistry;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.chatcui.gateway.relay.DeliveryAckStateMachine;
 import com.chatcui.gateway.relay.RelayEnvelope;
 import com.chatcui.gateway.relay.RelayPublisher;
 import com.chatcui.gateway.routing.RouteOwnershipRecord;
@@ -31,6 +32,7 @@ public class BridgePersistencePublisher {
     private final RelayPublisher relayPublisher;
     private final String gatewayOwnerId;
     private final Set<String> emittedRelayTuples = ConcurrentHashMap.newKeySet();
+    private final DeliveryAckStateMachine deliveryAckStateMachine = new DeliveryAckStateMachine();
 
     public BridgePersistencePublisher(SkillPersistenceForwarder forwarder, DeliveryStatusReporter statusReporter) {
         this(
@@ -153,11 +155,19 @@ public class BridgePersistencePublisher {
 
     private void forwardWithRouteAwareness(SkillTurnForwardEvent event) {
         Optional<RouteOwnershipRecord> routeRecord = loadRouteRecord(event);
+        long routeVersion = routeRecord.map(RouteOwnershipRecord::routeVersion).orElse(0L);
+        deliveryAckStateMachine.markGatewayOwnerAccepted(event, routeVersion);
+        if (isTerminalTimeoutEvent(event)) {
+            forwardAccepted(event);
+            markTimeout(event, routeVersion, event.reasonCode(), event.nextAction());
+            return;
+        }
         if (routeRecord.isPresent() && shouldRelay(routeRecord.get())) {
             publishFirstHopRelay(routeRecord.get(), event);
             return;
         }
         forwardAccepted(event);
+        deliveryAckStateMachine.markClientDelivered(event, routeVersion);
     }
 
     private Optional<RouteOwnershipRecord> loadRouteRecord(SkillTurnForwardEvent event) {
@@ -182,19 +192,30 @@ public class BridgePersistencePublisher {
                     envelope.turnId(),
                     envelope.seq(),
                     envelope.topic());
+            deliveryAckStateMachine.markClientDelivered(event, routeRecord.routeVersion());
             return;
         }
-        RelayPublisher.PublishReceipt receipt = relayPublisher.publishFirstHop(envelope);
-        if (!receipt.accepted()) {
-            LOGGER.log(
-                    System.Logger.Level.INFO,
-                    "relay duplicate reported by publisher: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
-                    envelope.dedupeKey(),
-                    envelope.sessionId(),
-                    envelope.turnId(),
-                    envelope.seq(),
-                    envelope.topic());
+        try {
+            RelayPublisher.PublishReceipt receipt = relayPublisher.publishFirstHop(envelope);
+            if (!receipt.accepted()) {
+                LOGGER.log(
+                        System.Logger.Level.INFO,
+                        "relay duplicate reported by publisher: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
+                        envelope.dedupeKey(),
+                        envelope.sessionId(),
+                        envelope.turnId(),
+                        envelope.seq(),
+                        envelope.topic());
+            }
+            deliveryAckStateMachine.markClientDelivered(event, routeRecord.routeVersion());
+        } catch (RuntimeException publishError) {
+            markTimeout(event, routeRecord.routeVersion(), "RELAY_CLIENT_DELIVERY_TIMEOUT", "retry_via_route_recheck");
+            throw publishError;
         }
+    }
+
+    Optional<DeliveryAckStateMachine.AckSnapshot> deliveryAck(SkillTurnForwardEvent event) {
+        return deliveryAckStateMachine.current(event);
     }
 
     private SkillTurnForwardEvent compensateEvent(SkillTurnForwardEvent source, ResumeDecision decision) {
@@ -258,5 +279,23 @@ public class BridgePersistencePublisher {
         }
         String normalized = value.trim();
         return normalized.isEmpty() ? null : normalized;
+    }
+
+    private boolean isTerminalTimeoutEvent(SkillTurnForwardEvent event) {
+        return "skill.turn.error".equals(event.topic()) && event.reasonCode() != null && !event.reasonCode().isBlank();
+    }
+
+    private void markTimeout(SkillTurnForwardEvent event, long routeVersion, String errorCode, String nextAction) {
+        String normalizedErrorCode = normalizeRequired(errorCode, "error_code");
+        String normalizedNextAction = normalizeRequired(nextAction, "next_action");
+        deliveryAckStateMachine.markClientDeliveryTimeout(event, routeVersion, normalizedErrorCode, normalizedNextAction);
+    }
+
+    private String normalizeRequired(String value, String fieldName) {
+        String normalized = normalizeOptional(value);
+        if (normalized == null) {
+            throw new IllegalArgumentException(fieldName + " must not be blank");
+        }
+        return normalized;
     }
 }
