@@ -3,11 +3,14 @@ package com.chatcui.gateway.integration;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
+import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.DeliveryRetryQueue;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.chatcui.gateway.runtime.BridgePersistencePublisher;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,6 +27,8 @@ class SkillPersistenceForwardingIntegrationTest {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
+            SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+            BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
             DeliveryStatusReporter reporter = new DeliveryStatusReporter();
             List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
             DeliveryRetryQueue retryQueue = new DeliveryRetryQueue(
@@ -59,6 +64,20 @@ class SkillPersistenceForwardingIntegrationTest {
             assertEquals("saved", reporter.currentStatus(delta).orElseThrow());
             assertEquals("saved", reporter.currentStatus(fin).orElseThrow());
             assertEquals("saved", reporter.currentStatus(completed).orElseThrow());
+            assertEquals(3.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.resume.outcomes",
+                    "gateway.bridge.resume",
+                    "continue",
+                    FailureClass.BRIDGE,
+                    true));
+            assertEquals(3.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.reconnect.outcomes",
+                    "gateway.bridge.reconnect",
+                    "resumed",
+                    FailureClass.BRIDGE,
+                    true));
         } finally {
             executor.shutdownNow();
             scheduler.shutdownNow();
@@ -70,6 +89,8 @@ class SkillPersistenceForwardingIntegrationTest {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
         ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
+            SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+            BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
             DeliveryStatusReporter reporter = new DeliveryStatusReporter();
             List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
             DeliveryRetryQueue retryQueue = new DeliveryRetryQueue(
@@ -99,6 +120,93 @@ class SkillPersistenceForwardingIntegrationTest {
             SkillTurnForwardEvent compensate = persisted.get(1);
             assertEquals("SEQ_GAP_COMPENSATION_REQUIRED", compensate.reasonCode());
             assertEquals("compensate_and_resume", compensate.nextAction());
+            assertEquals(1.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.resume.outcomes",
+                    "gateway.bridge.resume",
+                    "continue",
+                    FailureClass.BRIDGE,
+                    true));
+            assertEquals(1.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.resume.outcomes",
+                    "gateway.bridge.resume",
+                    "compensate_gap",
+                    FailureClass.BRIDGE,
+                    true));
+            assertEquals(2.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.reconnect.outcomes",
+                    "gateway.bridge.reconnect",
+                    "resumed",
+                    FailureClass.BRIDGE,
+                    true));
+        } finally {
+            executor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
+    @Test
+    void ownerConflictEmitsTerminalFailureMetrics() throws Exception {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+            BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+            DeliveryStatusReporter reporter = new DeliveryStatusReporter();
+            List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
+            DeliveryRetryQueue retryQueue = new DeliveryRetryQueue(
+                    scheduler,
+                    2,
+                    Duration.ofMillis(5),
+                    persisted::add,
+                    reporter
+            );
+            SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                    payload -> {
+                        throw new IllegalStateException("skill service unavailable");
+                    },
+                    retryQueue,
+                    executor
+            );
+            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
+
+            SkillTurnForwardEvent ownerA = event("turn-shared-terminal", 1L, "delta", "draft");
+            SkillTurnForwardEvent ownerB = new SkillTurnForwardEvent(
+                    ownerA.tenantId(),
+                    "client-conflict",
+                    ownerA.sessionId(),
+                    ownerA.turnId(),
+                    2L,
+                    "trace-terminal",
+                    ownerA.actor(),
+                    ownerA.eventType(),
+                    "payload-conflict",
+                    ownerA.topic());
+
+            publisher.publish(ownerA.topic(), ownerA);
+            publisher.publish(ownerB.topic(), ownerB);
+
+            assertTrue(waitUntil(() -> persisted.size() == 2, 1500));
+            assertEquals(List.of("delta", "error"), persisted.stream().map(SkillTurnForwardEvent::eventType).toList());
+            SkillTurnForwardEvent terminal = persisted.get(1);
+            assertEquals("RESUME_OWNER_CONFLICT", terminal.reasonCode());
+            assertEquals("restart_session", terminal.nextAction());
+            assertEquals(1.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.resume.outcomes",
+                    "gateway.bridge.resume",
+                    "terminal_failure",
+                    FailureClass.BRIDGE,
+                    false));
+            assertEquals(1.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.bridge.reconnect.outcomes",
+                    "gateway.bridge.reconnect",
+                    "failed",
+                    FailureClass.BRIDGE,
+                    false));
         } finally {
             executor.shutdownNow();
             scheduler.shutdownNow();
@@ -118,6 +226,27 @@ class SkillPersistenceForwardingIntegrationTest {
                 payload,
                 "skill.turn." + eventType
         );
+    }
+
+    private double counterCount(
+            SimpleMeterRegistry registry,
+            String name,
+            String component,
+            String outcome,
+            FailureClass failureClass,
+            boolean retryable) {
+        return registry.find(name)
+                .tags(
+                        "component",
+                        component,
+                        "outcome",
+                        outcome,
+                        "failure_class",
+                        failureClass.value(),
+                        "retryable",
+                        Boolean.toString(retryable))
+                .counter()
+                .count();
     }
 
     private boolean waitUntil(Check check, long timeoutMs) throws InterruptedException {

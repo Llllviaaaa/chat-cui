@@ -10,6 +10,9 @@ import com.chatcui.gateway.auth.ReplayGuard;
 import com.chatcui.gateway.auth.model.AuthCredentialRecord;
 import com.chatcui.gateway.auth.model.AuthRequest;
 import com.chatcui.gateway.http.AuthEntryInterceptor;
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
+import com.chatcui.gateway.observability.FailureClass;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
@@ -39,6 +42,8 @@ class AuthEntryIntegrationTest {
     @Test
     void missingMetadataRejectedWithDeterministicCode() {
         AuthEntryInterceptor interceptor = buildInterceptor(true, true);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
         AuthRequest invalid = new AuthRequest("", "tenant-a", "client-a", NOW.getEpochSecond(), "nonce", "session", "sig", "trace");
 
         AuthEntryInterceptor.EntryDecision decision = interceptor.preHandle(invalid);
@@ -46,11 +51,17 @@ class AuthEntryIntegrationTest {
         assertEquals(false, decision.allowed());
         assertEquals(400, decision.statusCode());
         assertEquals("AUTH_V1_MISSING_CREDENTIAL", decision.errorResponse().error_code());
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "missing_credential",
+                true));
     }
 
     @Test
     void replayRequestRejected() {
         AuthEntryInterceptor interceptor = buildInterceptor(true, true);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
         AuthRequest request = signedRequest("nonce-2", "session-2", NOW.getEpochSecond(), "secret-a");
 
         AuthEntryInterceptor.EntryDecision first = interceptor.preHandle(request);
@@ -59,11 +70,17 @@ class AuthEntryIntegrationTest {
         assertTrue(first.allowed());
         assertEquals(false, second.allowed());
         assertEquals("AUTH_V1_REPLAY_DETECTED", second.errorResponse().error_code());
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "replay_detected",
+                true));
     }
 
     @Test
     void cooldownReturnedAfterRepeatedInvalidSignature() {
         AuthEntryInterceptor interceptor = buildInterceptor(true, true);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
         AuthRequest invalid = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -80,6 +97,10 @@ class AuthEntryIntegrationTest {
         assertEquals(false, decision.allowed());
         assertEquals("AUTH_V1_COOLDOWN_ACTIVE", decision.errorResponse().error_code());
         assertTrue(decision.errorResponse().retry_after() != null && decision.errorResponse().retry_after() > 0);
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "cooldown_active",
+                true));
     }
 
     private AuthEntryInterceptor buildInterceptor(boolean active, boolean permitted) {
@@ -135,5 +156,23 @@ class AuthEntryIntegrationTest {
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    private double counterCount(
+            SimpleMeterRegistry registry,
+            String outcome,
+            boolean retryable) {
+        return registry.find("chatcui.gateway.auth.outcomes")
+                .tags(
+                        "component",
+                        "gateway.auth",
+                        "outcome",
+                        outcome,
+                        "failure_class",
+                        FailureClass.AUTH.value(),
+                        "retryable",
+                        Boolean.toString(retryable))
+                .counter()
+                .count();
     }
 }

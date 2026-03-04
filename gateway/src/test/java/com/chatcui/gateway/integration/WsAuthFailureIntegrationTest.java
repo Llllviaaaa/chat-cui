@@ -10,7 +10,10 @@ import com.chatcui.gateway.auth.FailureCooldownPolicy;
 import com.chatcui.gateway.auth.ReplayGuard;
 import com.chatcui.gateway.auth.model.AuthCredentialRecord;
 import com.chatcui.gateway.auth.model.AuthRequest;
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
+import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.ws.WsAuthHandshakeInterceptor;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
@@ -27,6 +30,8 @@ class WsAuthFailureIntegrationTest {
     @Test
     void invalidSignatureUsesSharedAuthV1CodeAndCloseReason() {
         WsAuthHandshakeInterceptor interceptor = buildInterceptor(true);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
         AuthRequest invalid = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -43,11 +48,14 @@ class WsAuthFailureIntegrationTest {
         assertEquals(4401, decision.closeCode());
         assertEquals("AUTH_V1_INVALID_SIGNATURE", decision.errorResponse().error_code());
         assertNotNull(decision.errorResponse().next_action());
+        assertEquals(1.0, counterCount(meterRegistry, "invalid_signature", true));
     }
 
     @Test
     void permissionDeniedUses403FamilyCloseCode() {
         WsAuthHandshakeInterceptor interceptor = buildInterceptor(false);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
         AuthRequest request = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -63,6 +71,7 @@ class WsAuthFailureIntegrationTest {
         assertFalse(decision.accepted());
         assertEquals(4403, decision.closeCode());
         assertEquals("AUTH_V1_PERMISSION_DENIED", decision.errorResponse().error_code());
+        assertEquals(1.0, counterCount(meterRegistry, "permission_denied", false));
     }
 
     private WsAuthHandshakeInterceptor buildInterceptor(boolean permitted) {
@@ -85,5 +94,23 @@ class WsAuthFailureIntegrationTest {
                 new AuthService.Policy(Duration.ofMinutes(15), Duration.ofMinutes(5)),
                 Clock.fixed(NOW, ZoneOffset.UTC));
         return new WsAuthHandshakeInterceptor(service, new ErrorResponseFactory());
+    }
+
+    private double counterCount(
+            SimpleMeterRegistry registry,
+            String outcome,
+            boolean retryable) {
+        return registry.find("chatcui.gateway.auth.outcomes")
+                .tags(
+                        "component",
+                        "gateway.auth",
+                        "outcome",
+                        outcome,
+                        "failure_class",
+                        FailureClass.AUTH.value(),
+                        "retryable",
+                        Boolean.toString(retryable))
+                .counter()
+                .count();
     }
 }
