@@ -68,9 +68,9 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 ## Session Continuity
 
-Last session: 2026-03-04 (milestone completion workflow)  
-Stopped at: Archived v1.0 roadmap/requirements/audit and updated project evolution docs  
-Resume file: `.planning/MILESTONES.md`
+Last session: 2026-03-04 (phase 8 discuss workflow)  
+Stopped at: Phase 8 context gathered  
+Resume file: `.planning/phases/08-ai-gateway-skill-service-opencode/08-CONTEXT.md`
 
 ## Next Command
 
