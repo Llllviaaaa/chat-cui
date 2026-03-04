@@ -318,14 +318,14 @@ class SkillPersistenceForwardingIntegrationTest {
                 "relay_timeout",
                 FailureClass.BRIDGE,
                 true));
-        assertEquals(2.0, counterCount(
+        assertEquals(3.0, counterCount(
                 meterRegistry,
                 "chatcui.gateway.ack.outcomes",
                 "gateway.ack",
                 "gateway_owner_accepted",
                 FailureClass.BRIDGE,
                 true));
-        assertEquals(1.0, counterCount(
+        assertEquals(2.0, counterCount(
                 meterRegistry,
                 "chatcui.gateway.ack.outcomes",
                 "gateway.ack",

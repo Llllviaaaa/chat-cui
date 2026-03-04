@@ -1,6 +1,7 @@
 package com.chatcui.gateway.runtime;
 
 import com.chatcui.gateway.observability.BridgeMetricsRegistry;
+import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
@@ -59,6 +60,23 @@ public class BridgePersistencePublisher {
                 null);
     }
 
+    public BridgePersistencePublisher(
+            SkillPersistenceForwarder forwarder,
+            DeliveryStatusReporter statusReporter,
+            BridgeMetricsRegistry metricsRegistry,
+            RouteOwnershipStore routeOwnershipStore,
+            RelayPublisher relayPublisher,
+            String gatewayOwnerId) {
+        this(
+                forwarder,
+                statusReporter,
+                new ResumeCoordinator(),
+                metricsRegistry,
+                routeOwnershipStore,
+                relayPublisher,
+                gatewayOwnerId);
+    }
+
     BridgePersistencePublisher(
             SkillPersistenceForwarder forwarder,
             DeliveryStatusReporter statusReporter,
@@ -111,23 +129,25 @@ public class BridgePersistencePublisher {
         }
 
         ResumeDecision decision = resumeCoordinator.evaluate(
+                event.tenantId(),
                 event.sessionId(),
                 event.turnId(),
                 event.seq(),
-                event.clientId());
+                resolveResumeOwner(event));
         recordDecisionMetrics(decision);
+        long routeVersion = routeVersionForDecision(decision);
 
         switch (decision.outcome()) {
             case CONTINUE -> forwardWithRouteAwareness(event);
-            case DROP_DUPLICATE -> log("duplicate dropped", decision, event);
+            case DROP_DUPLICATE -> logResume("duplicate dropped", decision, event, routeVersion);
             case COMPENSATE_GAP -> {
                 SkillTurnForwardEvent compensation = compensateEvent(event, decision);
-                log("gap compensation emitted", decision, compensation);
+                logResume("gap compensation emitted", decision, compensation, routeVersion);
                 forwardWithRouteAwareness(compensation);
             }
             case TERMINAL_FAILURE -> {
                 SkillTurnForwardEvent terminal = terminalFailureEvent(event, decision);
-                log("terminal resume failure emitted", decision, terminal);
+                logResume("terminal resume failure emitted", decision, terminal, routeVersion);
                 forwardWithRouteAwareness(terminal);
             }
         }
@@ -137,6 +157,9 @@ public class BridgePersistencePublisher {
         boolean retryable = decision.outcome() != ResumeDecision.Outcome.TERMINAL_FAILURE;
         metricsRegistry.recordBridgeResumeOutcome(resumeOutcomeTag(decision.outcome()), retryable);
         metricsRegistry.recordBridgeReconnectOutcome(retryable ? "resumed" : "failed", retryable);
+        if (decision.outcome() == ResumeDecision.Outcome.TERMINAL_FAILURE) {
+            metricsRegistry.recordRouteOutcome(routeOutcomeTag(decision.reasonCode()), FailureClass.BRIDGE, false);
+        }
     }
 
     private String resumeOutcomeTag(ResumeDecision.Outcome outcome) {
@@ -148,6 +171,20 @@ public class BridgePersistencePublisher {
         };
     }
 
+    private String routeOutcomeTag(String reasonCode) {
+        if ("RESUME_OWNER_CONFLICT".equals(reasonCode)) {
+            return "route_conflict";
+        }
+        if ("OWNER_FENCED".equals(reasonCode)) {
+            return "owner_fenced";
+        }
+        return "terminal_failure";
+    }
+
+    private long routeVersionForDecision(ResumeDecision decision) {
+        return asLong(decision.diagnostics().get("route_version"), 0L);
+    }
+
     private void forwardAccepted(SkillTurnForwardEvent event) {
         statusReporter.pending(event);
         forwarder.forward(event);
@@ -157,6 +194,13 @@ public class BridgePersistencePublisher {
         Optional<RouteOwnershipRecord> routeRecord = loadRouteRecord(event);
         long routeVersion = routeRecord.map(RouteOwnershipRecord::routeVersion).orElse(0L);
         deliveryAckStateMachine.markGatewayOwnerAccepted(event, routeVersion);
+        metricsRegistry.recordAckOutcome("gateway_owner_accepted", FailureClass.BRIDGE, true);
+        logDeliveryStage("gateway_owner_accepted", "accepted", event, routeVersion, null, null);
+        if (routeRecord.isPresent() && isLocalOwnerFenced(routeRecord.get())) {
+            metricsRegistry.recordRouteOutcome("owner_fenced", FailureClass.BRIDGE, false);
+            markTimeout(event, routeVersion, "OWNER_FENCED", "reroute_to_active_owner");
+            return;
+        }
         if (isTerminalTimeoutEvent(event)) {
             forwardAccepted(event);
             markTimeout(event, routeVersion, event.reasonCode(), event.nextAction());
@@ -167,47 +211,55 @@ public class BridgePersistencePublisher {
             return;
         }
         forwardAccepted(event);
-        deliveryAckStateMachine.markClientDelivered(event, routeVersion);
+        markDelivered(event, routeVersion, "local_forward");
     }
 
     private Optional<RouteOwnershipRecord> loadRouteRecord(SkillTurnForwardEvent event) {
-        if (routeOwnershipStore == null || relayPublisher == null || gatewayOwnerId == null) {
+        if (routeOwnershipStore == null) {
             return Optional.empty();
         }
         return routeOwnershipStore.load(event.tenantId(), event.sessionId());
     }
 
     private boolean shouldRelay(RouteOwnershipRecord routeRecord) {
-        return !routeRecord.gatewayOwner().equals(gatewayOwnerId);
+        return relayPublisher != null && gatewayOwnerId != null && !routeRecord.gatewayOwner().equals(gatewayOwnerId);
+    }
+
+    private boolean isLocalOwnerFenced(RouteOwnershipRecord routeRecord) {
+        if (gatewayOwnerId == null) {
+            return false;
+        }
+        String fencedOwner = normalizeOptional(routeRecord.fencedOwner());
+        return fencedOwner != null && fencedOwner.equals(gatewayOwnerId);
     }
 
     private void publishFirstHopRelay(RouteOwnershipRecord routeRecord, SkillTurnForwardEvent event) {
         RelayEnvelope envelope = RelayEnvelope.firstHop(event, routeRecord, gatewayOwnerId);
         if (!emittedRelayTuples.add(envelope.dedupeKey())) {
-            LOGGER.log(
-                    System.Logger.Level.INFO,
-                    "relay duplicate suppressed: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
-                    envelope.dedupeKey(),
-                    envelope.sessionId(),
-                    envelope.turnId(),
-                    envelope.seq(),
-                    envelope.topic());
-            deliveryAckStateMachine.markClientDelivered(event, routeRecord.routeVersion());
+            metricsRegistry.recordRelayOutcome("relay_success", FailureClass.BRIDGE, false);
+            logDeliveryStage(
+                    "relay_publish_duplicate_suppressed",
+                    "duplicate_suppressed",
+                    event,
+                    routeRecord.routeVersion(),
+                    null,
+                    null);
+            markDelivered(event, routeRecord.routeVersion(), "relay_publish_duplicate_suppressed");
             return;
         }
         try {
             RelayPublisher.PublishReceipt receipt = relayPublisher.publishFirstHop(envelope);
             if (!receipt.accepted()) {
-                LOGGER.log(
-                        System.Logger.Level.INFO,
-                        "relay duplicate reported by publisher: dedupe_key={0}, session_id={1}, turn_id={2}, seq={3}, topic={4}",
-                        envelope.dedupeKey(),
-                        envelope.sessionId(),
-                        envelope.turnId(),
-                        envelope.seq(),
-                        envelope.topic());
+                logDeliveryStage(
+                        "relay_publish_duplicate_reported",
+                        "duplicate_reported",
+                        event,
+                        routeRecord.routeVersion(),
+                        null,
+                        null);
             }
-            deliveryAckStateMachine.markClientDelivered(event, routeRecord.routeVersion());
+            metricsRegistry.recordRelayOutcome("relay_success", FailureClass.BRIDGE, false);
+            markDelivered(event, routeRecord.routeVersion(), "relay_publish_accepted");
         } catch (RuntimeException publishError) {
             markTimeout(event, routeRecord.routeVersion(), "RELAY_CLIENT_DELIVERY_TIMEOUT", "retry_via_route_recheck");
             throw publishError;
@@ -252,18 +304,42 @@ public class BridgePersistencePublisher {
                 decision.nextAction());
     }
 
-    private void log(String action, ResumeDecision decision, SkillTurnForwardEvent event) {
+    private void logResume(String action, ResumeDecision decision, SkillTurnForwardEvent event, long routeVersion) {
         LOGGER.log(
                 System.Logger.Level.INFO,
-                "resume {0}: outcome={1}, reason_code={2}, next_action={3}, session_id={4}, turn_id={5}, seq={6}, diagnostics={7}",
+                "resume stage=resume_decision, action={0}, outcome={1}, reason_code={2}, next_action={3}, trace_id={4}, route_version={5}, session_id={6}, turn_id={7}, seq={8}, diagnostics={9}",
                 action,
                 decision.outcome().name().toLowerCase(Locale.ROOT),
                 decision.reasonCode(),
                 decision.nextAction(),
+                event.traceId(),
+                routeVersion,
                 event.sessionId(),
                 event.turnId(),
                 event.seq(),
                 decision.diagnostics());
+    }
+
+    private void logDeliveryStage(
+            String stage,
+            String outcome,
+            SkillTurnForwardEvent event,
+            long routeVersion,
+            String reasonCode,
+            String nextAction) {
+        LOGGER.log(
+                System.Logger.Level.INFO,
+                "delivery stage={0}, outcome={1}, trace_id={2}, route_version={3}, session_id={4}, turn_id={5}, seq={6}, topic={7}, reason_code={8}, next_action={9}",
+                stage,
+                outcome,
+                event.traceId(),
+                routeVersion,
+                event.sessionId(),
+                event.turnId(),
+                event.seq(),
+                event.topic(),
+                normalizeOptional(reasonCode),
+                normalizeOptional(nextAction));
     }
 
     private long asLong(Object value, long fallback) {
@@ -285,10 +361,38 @@ public class BridgePersistencePublisher {
         return "skill.turn.error".equals(event.topic()) && event.reasonCode() != null && !event.reasonCode().isBlank();
     }
 
+    private void markDelivered(SkillTurnForwardEvent event, long routeVersion, String stage) {
+        deliveryAckStateMachine.markClientDelivered(event, routeVersion);
+        metricsRegistry.recordAckOutcome("client_delivered", FailureClass.BRIDGE, false);
+        logDeliveryStage(stage, "client_delivered", event, routeVersion, null, null);
+    }
+
     private void markTimeout(SkillTurnForwardEvent event, long routeVersion, String errorCode, String nextAction) {
         String normalizedErrorCode = normalizeRequired(errorCode, "error_code");
         String normalizedNextAction = normalizeRequired(nextAction, "next_action");
         deliveryAckStateMachine.markClientDeliveryTimeout(event, routeVersion, normalizedErrorCode, normalizedNextAction);
+        if (isRelayTimeoutReason(normalizedErrorCode)) {
+            metricsRegistry.recordRelayOutcome("relay_timeout", FailureClass.BRIDGE, true);
+        }
+        metricsRegistry.recordAckOutcome("client_delivery_timeout", FailureClass.BRIDGE, true);
+        logDeliveryStage(
+                "client_delivery_timeout",
+                "client_delivery_timeout",
+                event,
+                routeVersion,
+                normalizedErrorCode,
+                normalizedNextAction);
+    }
+
+    private boolean isRelayTimeoutReason(String errorCode) {
+        return "RELAY_CLIENT_DELIVERY_TIMEOUT".equals(errorCode);
+    }
+
+    private String resolveResumeOwner(SkillTurnForwardEvent event) {
+        if (gatewayOwnerId != null) {
+            return gatewayOwnerId;
+        }
+        return event.clientId();
     }
 
     private String normalizeRequired(String value, String fieldName) {

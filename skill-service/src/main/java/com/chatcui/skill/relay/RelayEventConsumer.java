@@ -1,5 +1,7 @@
 package com.chatcui.skill.relay;
 
+import com.chatcui.skill.observability.FailureClass;
+import com.chatcui.skill.observability.SkillMetricsRecorder;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -10,6 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class RelayEventConsumer {
     private static final Duration DEFAULT_UNKNOWN_OWNER_REPLAY_WINDOW = Duration.ofMinutes(15);
+    private static final System.Logger LOGGER = System.getLogger(RelayEventConsumer.class.getName());
 
     private final String consumerGroup;
     private final String localSkillOwner;
@@ -18,6 +21,7 @@ public class RelayEventConsumer {
     private final AckClient ackClient;
     private final UnknownOwnerRecoveryTracker unknownOwnerRecoveryTracker;
     private final Clock clock;
+    private final SkillMetricsRecorder metricsRecorder;
 
     public RelayEventConsumer(
             String consumerGroup,
@@ -31,18 +35,36 @@ public class RelayEventConsumer {
                 relayDispatchService,
                 tupleDedupeStore,
                 ackClient,
-                new InMemoryUnknownOwnerRecoveryTracker(DEFAULT_UNKNOWN_OWNER_REPLAY_WINDOW),
-                Clock.systemUTC());
+                SkillMetricsRecorder.noop());
     }
 
-    RelayEventConsumer(
+    public RelayEventConsumer(
+            String consumerGroup,
+            String localSkillOwner,
+            RelayDispatchService relayDispatchService,
+            TupleDedupeStore tupleDedupeStore,
+            AckClient ackClient,
+            SkillMetricsRecorder metricsRecorder) {
+        this(
+                consumerGroup,
+                localSkillOwner,
+                relayDispatchService,
+                tupleDedupeStore,
+                ackClient,
+                new InMemoryUnknownOwnerRecoveryTracker(DEFAULT_UNKNOWN_OWNER_REPLAY_WINDOW),
+                Clock.systemUTC(),
+                metricsRecorder);
+    }
+
+    public RelayEventConsumer(
             String consumerGroup,
             String localSkillOwner,
             RelayDispatchService relayDispatchService,
             TupleDedupeStore tupleDedupeStore,
             AckClient ackClient,
             UnknownOwnerRecoveryTracker unknownOwnerRecoveryTracker,
-            Clock clock) {
+            Clock clock,
+            SkillMetricsRecorder metricsRecorder) {
         this.consumerGroup = requireValue(consumerGroup, "consumer_group");
         this.localSkillOwner = requireValue(localSkillOwner, "local_skill_owner");
         this.relayDispatchService = Objects.requireNonNull(relayDispatchService, "relayDispatchService must not be null");
@@ -51,6 +73,7 @@ public class RelayEventConsumer {
         this.unknownOwnerRecoveryTracker =
                 Objects.requireNonNull(unknownOwnerRecoveryTracker, "unknownOwnerRecoveryTracker must not be null");
         this.clock = Objects.requireNonNull(clock, "clock must not be null");
+        this.metricsRecorder = metricsRecorder == null ? SkillMetricsRecorder.noop() : metricsRecorder;
     }
 
     public ConsumeOutcome consume(StreamRecord record) {
@@ -62,6 +85,8 @@ public class RelayEventConsumer {
                 record.event().topic());
         if (!tupleDedupeStore.markIfAbsent(dedupeTuple)) {
             ack(record);
+            metricsRecorder.recordRelayOutcome("duplicate_dropped", FailureClass.BRIDGE, false);
+            logConsumeStage("relay_consume_duplicate", "duplicate_dropped", record.event(), null, null);
             return new ConsumeOutcome(ConsumeStatus.DUPLICATE_DROPPED, true, dedupeTuple, null, null);
         }
 
@@ -74,8 +99,17 @@ public class RelayEventConsumer {
         ack(record);
         unknownOwnerRecoveryTracker.clear(dedupeTuple);
         if (dispatchOutcome.status() == RelayDispatchService.DispatchStatus.SKIPPED_NOT_OWNER) {
+            metricsRecorder.recordRelayOutcome("owner_fenced", FailureClass.BRIDGE, true);
+            logConsumeStage(
+                    "relay_consume_owner_fenced",
+                    "owner_fenced",
+                    record.event(),
+                    "OWNER_FENCED",
+                    "reroute_to_active_owner");
             return new ConsumeOutcome(ConsumeStatus.SKIPPED_NOT_OWNER, true, dedupeTuple, null, null);
         }
+        metricsRecorder.recordRelayOutcome("relay_success", FailureClass.BRIDGE, false);
+        logConsumeStage("relay_consume_dispatched", "relay_success", record.event(), null, null);
         return new ConsumeOutcome(ConsumeStatus.DISPATCHED, true, dedupeTuple, null, null);
     }
 
@@ -94,6 +128,13 @@ public class RelayEventConsumer {
             if (recoveryDecision == RecoveryDecision.REPLAY_WINDOW_EXPIRED) {
                 ack(record);
                 unknownOwnerRecoveryTracker.clear(dedupeTuple);
+                metricsRecorder.recordRelayOutcome("replay_window_expired", FailureClass.BRIDGE, false);
+                logConsumeStage(
+                        "relay_recovery_window_expired",
+                        "replay_window_expired",
+                        record.event(),
+                        "ROUTE_REPLAY_WINDOW_EXPIRED",
+                        "restart_session");
                 return new ConsumeOutcome(
                         ConsumeStatus.REPLAY_WINDOW_EXPIRED,
                         true,
@@ -102,7 +143,30 @@ public class RelayEventConsumer {
                         "restart_session");
             }
         }
+        metricsRecorder.recordRelayOutcome("relay_timeout", FailureClass.BRIDGE, true);
+        logConsumeStage("relay_retry_pending", "relay_timeout", record.event(), dispatchOutcome.reason(), null);
         return new ConsumeOutcome(ConsumeStatus.PENDING_RETRY, false, dedupeTuple, null, null);
+    }
+
+    private void logConsumeStage(
+            String stage,
+            String outcome,
+            RelayDispatchService.RelayEvent event,
+            String reasonCode,
+            String nextAction) {
+        LOGGER.log(
+                System.Logger.Level.INFO,
+                "relay stage={0}, outcome={1}, trace_id={2}, route_version={3}, session_id={4}, turn_id={5}, seq={6}, topic={7}, reason_code={8}, next_action={9}",
+                stage,
+                outcome,
+                event.traceId(),
+                event.routeVersion(),
+                event.sessionId(),
+                event.turnId(),
+                event.seq(),
+                event.topic(),
+                normalizeOptional(reasonCode),
+                normalizeOptional(nextAction));
     }
 
     private static String requireValue(String value, String fieldName) {

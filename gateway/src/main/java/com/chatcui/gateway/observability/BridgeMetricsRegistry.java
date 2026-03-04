@@ -13,6 +13,9 @@ public class BridgeMetricsRegistry {
     private static final String AUTH_OUTCOME_METRIC = "chatcui.gateway.auth.outcomes";
     private static final String PERSISTENCE_OUTCOME_METRIC = "chatcui.gateway.persistence.retry.outcomes";
     private static final String PERSISTENCE_DURATION_METRIC = "chatcui.gateway.persistence.retry.duration";
+    private static final String ROUTE_OUTCOME_METRIC = "chatcui.gateway.route.outcomes";
+    private static final String RELAY_OUTCOME_METRIC = "chatcui.gateway.relay.outcomes";
+    private static final String ACK_OUTCOME_METRIC = "chatcui.gateway.ack.outcomes";
 
     private static final String TAG_COMPONENT = "component";
     private static final String TAG_FAILURE_CLASS = "failure_class";
@@ -22,6 +25,9 @@ public class BridgeMetricsRegistry {
     private static final String COMPONENT_RESUME = "gateway.bridge.resume";
     private static final String COMPONENT_AUTH = "gateway.auth";
     private static final String COMPONENT_PERSISTENCE = "gateway.persistence.retry";
+    private static final String COMPONENT_ROUTE = "gateway.route";
+    private static final String COMPONENT_RELAY = "gateway.relay";
+    private static final String COMPONENT_ACK = "gateway.ack";
 
     private final MeterRegistry meterRegistry;
 
@@ -67,6 +73,18 @@ public class BridgeMetricsRegistry {
 
     public void recordPersistenceOutcome(String outcome, FailureClass failureClass, boolean retryable) {
         increment(PERSISTENCE_OUTCOME_METRIC, COMPONENT_PERSISTENCE, outcome, failureClass, retryable);
+    }
+
+    public void recordRouteOutcome(String outcome, FailureClass failureClass, boolean retryable) {
+        increment(ROUTE_OUTCOME_METRIC, COMPONENT_ROUTE, outcome, failureClass, retryable);
+    }
+
+    public void recordRelayOutcome(String outcome, FailureClass failureClass, boolean retryable) {
+        increment(RELAY_OUTCOME_METRIC, COMPONENT_RELAY, outcome, failureClass, retryable);
+    }
+
+    public void recordAckOutcome(String outcome, FailureClass failureClass, boolean retryable) {
+        increment(ACK_OUTCOME_METRIC, COMPONENT_ACK, outcome, failureClass, retryable);
     }
 
     public void recordPersistenceDuration(String outcome, FailureClass failureClass, boolean retryable, long durationNanos) {
