@@ -1,6 +1,7 @@
 package com.chatcui.skill.service;
 
 import com.chatcui.skill.api.dto.SkillTurnEventRequest;
+import com.chatcui.skill.observability.FailureClass;
 import com.chatcui.skill.persistence.mapper.TurnRecordMapper;
 import com.chatcui.skill.persistence.model.TurnRecord;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +11,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
+import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -28,6 +30,13 @@ class TurnPersistenceServiceTest {
     @BeforeEach
     void setUp() {
         service = new TurnPersistenceService(turnRecordMapper);
+    }
+
+    @Test
+    void failureClassContractUsesCanonicalTaxonomy() {
+        org.junit.jupiter.api.Assertions.assertEquals(
+                java.util.List.of("auth", "bridge", "persistence", "sendback", "unknown"),
+                Arrays.stream(FailureClass.values()).map(FailureClass::value).toList());
     }
 
     @Test

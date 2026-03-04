@@ -3,10 +3,12 @@ package com.chatcui.gateway.persistence;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
@@ -17,6 +19,13 @@ import org.junit.jupiter.api.Test;
 
 class SkillPersistenceForwarderTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void failureClassContractUsesCanonicalTaxonomy() {
+        assertEquals(
+                java.util.List.of("auth", "bridge", "persistence", "sendback", "unknown"),
+                Arrays.stream(FailureClass.values()).map(FailureClass::value).toList());
+    }
 
     @Test
     void forwardsPayloadWithSnakeCaseIdentifiersUnchanged() throws Exception {

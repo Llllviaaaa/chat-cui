@@ -1,5 +1,31 @@
 import { describe, expect, it } from "vitest";
+import {
+  FAILURE_CLASS_VALUES,
+  FAILURE_ENVELOPE_REQUIRED_FIELDS
+} from "../../../src/core/events/PluginEvents";
 import { runSession } from "../../../src/cli/commands/runSession";
+
+const EXPECTED_FAILURE_CLASSES = [
+  "auth",
+  "bridge",
+  "persistence",
+  "sendback",
+  "unknown"
+] as const;
+
+const EXPECTED_FAILURE_ENVELOPE_FIELDS = [
+  "tenant_id",
+  "client_id",
+  "session_id",
+  "turn_id",
+  "seq",
+  "trace_id",
+  "error_code",
+  "component",
+  "status",
+  "failure_class",
+  "retryable"
+] as const;
 
 class StubCredentialProvider {
   constructor(private readonly secret: string) {}
@@ -47,6 +73,13 @@ function baseEnv(overrides: NodeJS.ProcessEnv = {}): NodeJS.ProcessEnv {
 }
 
 describe("CliRealChain integration", () => {
+  it("exposes canonical failure taxonomy and envelope field contract", () => {
+    expect([...FAILURE_CLASS_VALUES]).toEqual([...EXPECTED_FAILURE_CLASSES]);
+    expect([...FAILURE_ENVELOPE_REQUIRED_FIELDS]).toEqual(
+      [...EXPECTED_FAILURE_ENVELOPE_FIELDS]
+    );
+  });
+
   it("rejects missing real-chain endpoint configuration", async () => {
     const logs = createLogger();
     const result = await runSession({
