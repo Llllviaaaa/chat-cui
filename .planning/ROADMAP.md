@@ -209,7 +209,7 @@ All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one pha
 **Goal:** Guarantee OpenCode messages are delivered to the correct target client user under distributed multi-instance `gateway` + `skill-service` topology, without wrong delivery, duplicate delivery, out-of-order replay, or ghost writes.
 **Requirements**: P08-ROUTE-01, P08-FENCE-01, P08-RELAY-01, P08-DEDUPE-01, P08-ACK-01, P08-RECOVERY-01, P08-OBS-01
 **Depends on:** Phase 7
-**Plans:** 1/4 plans complete
+**Plans:** 2/4 plans complete
 
 **Success Criteria:**
 1. Redis route table becomes source of truth keyed by `tenant_id + session_id`, with CAS versioning and immediate owner fence.
@@ -220,11 +220,11 @@ All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one pha
 
 Plans:
 - [x] 08-01-PLAN.md - Redis route truth, CAS migration, and owner fence contract foundation
-- [ ] 08-02-PLAN.md - cross-instance relay pipeline (`gateway -> skill-service owner -> target gateway/client`) with full-path dedupe
+- [x] 08-02-PLAN.md - cross-instance relay pipeline (`gateway -> skill-service owner -> target gateway/client`) with full-path dedupe
 - [ ] 08-03-PLAN.md - two-stage ack, unknown-owner recovery window, and fenced-owner deterministic failure semantics
 - [ ] 08-04-PLAN.md - route/fence/ack observability extension, integration evidence, and phase verification closure
 
 ---
-*Last updated: 2026-03-04 after executing 08-01 (Phase 8 in progress)*
+*Last updated: 2026-03-04 after executing 08-02 (Phase 8 in progress)*
 
 
