@@ -150,15 +150,27 @@ Plans:
 
 ## Phase 6: Reliability + Observability Hardening
 
+**Status:** Planned
+
 **Goal:** Increase integration reliability and troubleshooting clarity for team rollout.
 
 **Requirements:** BRG-04, DEM-02
+
+**Plans:** 6 plans
 
 **Success Criteria:**
 1. Connection interruption scenarios can auto-recover or fail fast with clear retry semantics.
 2. Session resume behavior preserves message ordering and avoids duplicate sendback.
 3. Logs include trace identifiers across plugin, gateway, and skill service boundaries.
 4. Core flow dashboard/metrics can diagnose at least auth failure, bridge failure, and sendback failure classes.
+
+Plans:
+- [ ] 06-01-PLAN.md - plugin reconnect coordinator with bounded retry, fresh auth, and resume anomaly handling
+- [ ] 06-02-PLAN.md - gateway resume-anchor coordinator with duplicate drop and gap compensation gating
+- [ ] 06-03-PLAN.md - skill-service sendback idempotency key enforcement and duplicate-safe response behavior
+- [ ] 06-04-PLAN.md - cross-service structured logging contract with shared taxonomy and deterministic failure envelope
+- [ ] 06-05-PLAN.md - low-cardinality gateway/skill metrics wiring and observability baseline runbook
+- [ ] 06-06-PLAN.md - phase verification evidence and tracker synchronization closure
 
 ## Phase 7: PC Agent Plugin Architecture Alignment
 
