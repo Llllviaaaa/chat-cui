@@ -57,6 +57,7 @@ Release closure is blocked when any required gate is failing unless a time-bound
 - Backward compatibility is mandatory for host/plugin/gateway contract surfaces by default.
 - Contract evolution must be additive-only unless a documented exception is approved.
 - Key runtime boundary events must expose an explicit contract-version signal and corresponding verification evidence.
+- Host-facing key runtime boundary events must include explicit `contract_version` metadata.
 - Deprecation, when unavoidable, requires a two-release window and documented migration notes.
 
 ## Evidence Logging Schema (`P07-EVID-01`)
