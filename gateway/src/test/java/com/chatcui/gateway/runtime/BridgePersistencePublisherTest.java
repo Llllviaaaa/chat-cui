@@ -8,11 +8,19 @@ import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.chatcui.gateway.relay.RelayEnvelope;
+import com.chatcui.gateway.relay.RelayPublisher;
+import com.chatcui.gateway.routing.RouteCasResult;
+import com.chatcui.gateway.routing.RouteOwnershipRecord;
+import com.chatcui.gateway.routing.RouteOwnershipStore;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -23,6 +31,130 @@ import org.junit.jupiter.api.Test;
 
 class BridgePersistencePublisherTest {
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    @Test
+    void nonTargetGatewayPublishesFirstHopRelayInsteadOfLocalForward() {
+        AtomicInteger forwarded = new AtomicInteger();
+        List<RelayEnvelope> relayed = new CopyOnWriteArrayList<>();
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> forwarded.incrementAndGet(),
+                (event, error) -> {
+                },
+                Runnable::run);
+        RouteOwnershipStore routeStore = fixedRouteStore(new RouteOwnershipRecord(
+                "tenant-a",
+                "session-a",
+                12L,
+                "skill-owner-a",
+                "gateway-owner-b",
+                null,
+                Instant.parse("2026-03-04T00:00:00Z")));
+        RelayPublisher relayPublisher = envelope -> {
+            relayed.add(envelope);
+            return RelayPublisher.PublishReceipt.accepted(envelope.dedupeKey());
+        };
+        BridgePersistencePublisher publisher = new BridgePersistencePublisher(
+                forwarder,
+                new DeliveryStatusReporter(),
+                new ResumeCoordinator(),
+                BridgeMetricsRegistry.noop(),
+                routeStore,
+                relayPublisher,
+                "gateway-owner-a");
+
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 1L));
+
+        assertEquals(0, forwarded.get());
+        assertEquals(1, relayed.size());
+        RelayEnvelope envelope = relayed.getFirst();
+        assertEquals("tenant-a", envelope.tenantId());
+        assertEquals("session-a", envelope.sessionId());
+        assertEquals("turn-shared", envelope.turnId());
+        assertEquals(1L, envelope.seq());
+        assertEquals("skill.turn.delta", envelope.topic());
+        assertEquals("trace-a", envelope.traceId());
+        assertEquals(12L, envelope.routeVersion());
+        assertEquals("gateway-owner-a", envelope.sourceGatewayOwner());
+        assertEquals("skill-owner-a", envelope.targetSkillOwner());
+        assertEquals("gateway-owner-b", envelope.targetGatewayOwner());
+        assertEquals("gateway_to_skill_owner", envelope.hop());
+        assertEquals("tenant-a:session-a", envelope.partitionKey());
+        assertEquals("session-a|turn-shared|1|skill.turn.delta", envelope.dedupeKey());
+    }
+
+    @Test
+    void targetGatewayContinuesLocalForwardingAndSkipsRelay() throws Exception {
+        AtomicInteger forwarded = new AtomicInteger();
+        List<RelayEnvelope> relayed = new CopyOnWriteArrayList<>();
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> forwarded.incrementAndGet(),
+                (event, error) -> {
+                },
+                Runnable::run);
+        RouteOwnershipStore routeStore = fixedRouteStore(new RouteOwnershipRecord(
+                "tenant-a",
+                "session-a",
+                12L,
+                "skill-owner-a",
+                "gateway-owner-a",
+                null,
+                Instant.parse("2026-03-04T00:00:00Z")));
+        RelayPublisher relayPublisher = envelope -> {
+            relayed.add(envelope);
+            return RelayPublisher.PublishReceipt.accepted(envelope.dedupeKey());
+        };
+        BridgePersistencePublisher publisher = new BridgePersistencePublisher(
+                forwarder,
+                new DeliveryStatusReporter(),
+                new ResumeCoordinator(),
+                BridgeMetricsRegistry.noop(),
+                routeStore,
+                relayPublisher,
+                "gateway-owner-a");
+
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 1L));
+
+        assertEquals(1, forwarded.get());
+        assertTrue(relayed.isEmpty());
+    }
+
+    @Test
+    void duplicateRelayPublishIsSuppressedByDedupeTuple() {
+        AtomicInteger forwarded = new AtomicInteger();
+        AtomicInteger relayAttempts = new AtomicInteger();
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> forwarded.incrementAndGet(),
+                (event, error) -> {
+                },
+                Runnable::run);
+        RouteOwnershipStore routeStore = fixedRouteStore(new RouteOwnershipRecord(
+                "tenant-a",
+                "session-a",
+                12L,
+                "skill-owner-a",
+                "gateway-owner-b",
+                null,
+                Instant.parse("2026-03-04T00:00:00Z")));
+        RelayPublisher relayPublisher = envelope -> {
+            relayAttempts.incrementAndGet();
+            return RelayPublisher.PublishReceipt.accepted(envelope.dedupeKey());
+        };
+        BridgePersistencePublisher publisher = new BridgePersistencePublisher(
+                forwarder,
+                new DeliveryStatusReporter(),
+                new ResumeCoordinator(),
+                BridgeMetricsRegistry.noop(),
+                routeStore,
+                relayPublisher,
+                "gateway-owner-a");
+
+        SkillTurnForwardEvent event = sampleEvent("skill.turn.delta", 1L);
+        publisher.publish(event.topic(), event);
+        publisher.publish(event.topic(), event);
+
+        assertEquals(0, forwarded.get());
+        assertEquals(1, relayAttempts.get());
+    }
 
 
     @Test
@@ -257,6 +389,32 @@ class BridgePersistencePublisherTest {
     private SkillTurnForwardEvent fromPayload(byte[] payload) throws Exception {
         return objectMapper.readValue(payload, new TypeReference<>() {
         });
+    }
+
+    private RouteOwnershipStore fixedRouteStore(RouteOwnershipRecord record) {
+        return new RouteOwnershipStore() {
+            @Override
+            public Optional<RouteOwnershipRecord> load(String tenantId, String sessionId) {
+                return Optional.of(record);
+            }
+
+            @Override
+            public RouteOwnershipRecord upsert(RouteOwnershipRecord record, Duration ttl) {
+                throw new UnsupportedOperationException("not needed in test");
+            }
+
+            @Override
+            public RouteCasResult casTransfer(
+                    String tenantId,
+                    String sessionId,
+                    long expectedRouteVersion,
+                    String newSkillOwner,
+                    String newGatewayOwner,
+                    String fencedOwner,
+                    Duration ttl) {
+                throw new UnsupportedOperationException("not needed in test");
+            }
+        };
     }
 
     private boolean waitUntil(Check check, long timeoutMs) throws InterruptedException {
