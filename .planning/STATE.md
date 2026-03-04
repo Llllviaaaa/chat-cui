@@ -54,7 +54,11 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Summary: `.planning/phases/03-skill-service-persistence-apis/03-02-SUMMARY.md`
 - Decision: Map delta/final events to `in_progress + pending`, and completed/error events to terminal delivery states
 - Decision: Expose deterministic session history API errors (`INVALID_REQUEST`, `INVALID_CURSOR`, `SESSION_NOT_FOUND`)
-- Next pending step: Execute `03-03-PLAN.md`
+- Completed: Phase 3 Plan 03-03 with gateway persistence forwarding, bounded async retry, and delivery status lifecycle visibility
+- Summary: `.planning/phases/03-skill-service-persistence-apis/03-03-SUMMARY.md`
+- Decision: Keep gateway forward acknowledgements immediate and independent from downstream persistence outcome.
+- Decision: Retain explicit gateway delivery status lifecycle (`pending`, `saved`, `failed`) for session history visibility alignment.
+- Next pending step: Execute `03-04-PLAN.md`
 
 ## Next Command
 
