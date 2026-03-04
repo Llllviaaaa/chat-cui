@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
 status: phase_in_progress
-last_updated: "2026-03-04T13:27:58Z"
+last_updated: "2026-03-04T13:46:14Z"
 progress:
   total_phases: 9
   completed_phases: 8
   total_plans: 42
-  completed_plans: 40
+  completed_plans: 41
 ---
 
 # STATE
@@ -70,9 +70,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 - Completed: `08-01-PLAN.md` (Redis route truth + CAS owner fence contract baseline)
 - Completed: `08-02-PLAN.md` (owner-first relay pipeline with first-hop gateway relay + skill-service consume/dispatch dedupe path)
-- Current phase progress: `2/4` plans complete in Phase 8
+- Completed: `08-03-PLAN.md` (two-stage delivery acknowledgement, bounded unknown-owner replay window, and OWNER_FENCED resume decisions)
+- Current phase progress: `3/4` plans complete in Phase 8
 
-### Recent Decisions (08-01, 08-02)
+### Recent Decisions (08-01, 08-02, 08-03)
 
 - Route key format standardized as `chatcui:route:{tenant_id:session_id}` to remain Redis Cluster slot-safe.
 - Owner migration result model standardized to explicit `APPLIED / VERSION_CONFLICT / MISSING`.
@@ -80,12 +81,15 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 - Non-target gateway instances publish first-hop relay events and do not direct-forward locally.
 - Relay dedupe tuple standardized to `session_id|turn_id|seq|topic` across gateway publish and skill-service consume.
 - Skill-service acks relay stream messages only after dispatch resolution; dispatch failures remain pending.
+- Delivery lifecycle is now explicit two-stage (`gateway_owner_accepted` then `client_delivered`/`client_delivery_timeout`) with deterministic timeout metadata.
+- Unknown-owner replay is bounded to 15 minutes; expired routes terminate deterministically with `ROUTE_REPLAY_WINDOW_EXPIRED`.
+- Resume coordinator decisions now support route-truth fencing and return `OWNER_FENCED` with `route_version` diagnostics for stale owners.
 
 ## Session Continuity
 
 Last session: 2026-03-04 (phase 8 plan execution)  
-Stopped at: Completed 08-02-PLAN.md  
-Resume file: `.planning/phases/08-ai-gateway-skill-service-opencode/08-03-PLAN.md`
+Stopped at: Completed 08-03-PLAN.md  
+Resume file: `.planning/phases/08-ai-gateway-skill-service-opencode/08-04-PLAN.md`
 
 ## Next Command
 
