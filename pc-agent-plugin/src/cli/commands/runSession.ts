@@ -10,6 +10,10 @@ import {
   CliRuntimeBootstrapError,
   type CliRuntimeBootstrapOptions
 } from "../runtime/CliRuntimeBootstrap";
+import {
+  FAILURE_CLASS_RETRYABLE_DEFAULT,
+  type FailureEnvelope
+} from "../../core/events/PluginEvents";
 
 export interface CliLogger {
   info(message: string): void;
@@ -98,7 +102,16 @@ export async function runSession(options: RunSessionOptions): Promise<RunSession
     };
   } catch (error) {
     const envelope = mapFailure(error, traceId, sessionId, debugId);
-    logger.error(JSON.stringify(envelope));
+    logger.error(
+      JSON.stringify(
+        toStructuredFailureEnvelope({
+          env,
+          traceId,
+          sessionId,
+          authFailure: envelope
+        })
+      )
+    );
     return {
       ok: false,
       error: envelope,
@@ -145,4 +158,40 @@ function createConsoleLogger(): CliLogger {
       console.error(message);
     }
   };
+}
+
+function toStructuredFailureEnvelope(params: {
+  env: NodeJS.ProcessEnv;
+  traceId: string;
+  sessionId: string;
+  authFailure: AuthErrorEnvelope;
+}): FailureEnvelope {
+  return {
+    tenant_id: nonEmpty(params.env.CHATCUI_TENANT_ID, "tenant-unknown"),
+    client_id: nonEmpty(params.env.CHATCUI_CLIENT_ID, "client-unknown"),
+    session_id: params.sessionId,
+    turn_id: nonEmpty(params.env.CHATCUI_TURN_ID, "turn-unknown"),
+    seq: normalizeSeq(params.env.CHATCUI_SEQ),
+    trace_id: params.traceId,
+    error_code: params.authFailure.error_code,
+    component: "plugin.cli.run-session",
+    status: "failed",
+    failure_class: "auth",
+    retryable: FAILURE_CLASS_RETRYABLE_DEFAULT.auth
+  };
+}
+
+function nonEmpty(value: string | undefined, fallback: string): string {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return fallback;
+}
+
+function normalizeSeq(value: string | undefined): number {
+  if (!value) {
+    return 0;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : 0;
 }

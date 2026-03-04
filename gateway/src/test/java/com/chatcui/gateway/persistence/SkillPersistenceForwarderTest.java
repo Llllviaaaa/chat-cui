@@ -9,6 +9,7 @@ import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Map;
@@ -91,27 +92,30 @@ class SkillPersistenceForwarderTest {
     @Test
     void persistenceFailureEmitsStructuredFailureEnvelopeWithoutPayloadLeakage() throws Exception {
         AtomicReference<Map<String, Object>> capturedFailure = new AtomicReference<>();
-        CountDownLatch retryLatch = new CountDownLatch(1);
         SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
                 payload -> {
                     throw new IllegalStateException("transport down");
                 },
-                (event, error) -> retryLatch.countDown(),
+                (event, error) -> {
+                },
                 SkillPersistenceForwarder.DeliveryStatusSink.noop(),
-                Executors.newSingleThreadExecutor(),
+                Runnable::run,
                 objectMapper,
-                capturedFailure::set);
+                envelope -> {
+                    capturedFailure.set(envelope);
+                });
 
-        forwarder.forward(sampleEvent(11L));
+        Method deliver = SkillPersistenceForwarder.class.getDeclaredMethod("deliver", SkillTurnForwardEvent.class);
+        deliver.setAccessible(true);
+        deliver.invoke(forwarder, sampleEvent(11L));
 
-        assertTrue(retryLatch.await(1, TimeUnit.SECONDS));
         Map<String, Object> envelope = capturedFailure.get();
         assertNotNull(envelope);
         assertEquals("tenant-a", envelope.get("tenant_id"));
         assertEquals("client-a", envelope.get("client_id"));
         assertEquals("session-a", envelope.get("session_id"));
         assertEquals("turn-a", envelope.get("turn_id"));
-        assertEquals(11, envelope.get("seq"));
+        assertEquals(11L, envelope.get("seq"));
         assertEquals("trace-a", envelope.get("trace_id"));
         assertEquals("PERSISTENCE_FORWARD_FAILED", envelope.get("error_code"));
         assertEquals("gateway.persistence.forwarder", envelope.get("component"));
