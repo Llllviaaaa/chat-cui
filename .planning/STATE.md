@@ -75,8 +75,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Acceptance evidence: `.planning/phases/05-sendback-to-im/05-ACCEPTANCE-EVIDENCE.md`
 - Decision: Sendback enforces assistant-only source validation and single-segment submit.
 - Decision: Failure flow preserves latest draft and supports one-click retry with deterministic error codes.
-- Next pending step: Start Phase 6 context discussion
+- Completed: Phase 6 context discussion with decisions captured for reconnect policy, resume/dedup semantics, and observability baseline
+- Context file: `.planning/phases/06-reliability-observability-hardening/06-CONTEXT.md`
+- Next pending step: Plan Phase 6 execution breakdown
 
 ## Next Command
 
-`$gsd-discuss-phase 6`
+`$gsd-plan-phase 6`
