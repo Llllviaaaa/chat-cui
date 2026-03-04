@@ -79,14 +79,18 @@ Every alignment claim must be recorded with the following fields:
 ## Waiver Governance (`P07-GOV-01`)
 
 Waivers are temporary and must be auditable.
+Phase-07 default is **release-block**: failed gates block merge/release unless a valid waiver exists.
+Canonical waiver schema lives in `.planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-WAIVER-TEMPLATE.md`.
 
 Required waiver attributes:
 
 - `waiver_id`
 - `requirement_id`
 - `owner`
+- `approver`
 - `status` (`proposed`, `approved`, `expired`, `closed`)
 - `reason`
+- `expiration_utc`
 - `expires_at_utc`
 - `mitigation`
 - `closure_action`

@@ -25,3 +25,8 @@
 1. Update `status` and `owner` at the same time when work starts.
 2. Fill `evidence_id` and `evidence_link` immediately after each successful gate run.
 3. If `status=WAIVED`, add a non-`none` `waiver_reference` and expiration in runbook governance log.
+
+## Governance Linkage
+
+- Default policy is `release-block`: OPEN items cannot ship without pass evidence or approved waiver.
+- Waiver records must use `07-WAIVER-TEMPLATE.md` and include `owner`, `approver`, and `expiration_utc`.
