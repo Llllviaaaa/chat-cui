@@ -24,7 +24,7 @@
 | 4 | Interaction Flow + Web UI Demo | Ship end-user trigger and in-session interaction in demo UI | CMD-01, CMD-02, CMD-03, SKL-01, SKL-02, SKL-03, DEM-01 | 5 |
 | 5 | Sendback to IM | Let user select output and send as IM message safely | SKL-04, SVC-04, IMS-01, IMS-02, IMS-03 | 5 |
 | 6 | Reliability + Observability Hardening | Add reconnect and cross-service tracing for stable integration | BRG-04, DEM-02 | 4 |
-| 7 | PC Agent Plugin Architecture Alignment | Align PC agent with plugin-based reference architecture | TBD | TBD |
+| 7 | PC Agent Plugin Architecture Alignment | Close plugin+gateway alignment against `message-bridge-opencode-plugin` with auditable governance gates | P07-BASE-01, P07-REF-01, P07-COMPAT-01, P07-VERSION-01, P07-GATE-01, P07-EVID-01, P07-GOV-01 | 5 |
 
 ## Phase Details
 
@@ -175,20 +175,33 @@ Plans:
 
 ## Phase 7: PC Agent Plugin Architecture Alignment
 
-**Status:** Pending (next focus)
+**Status:** In Progress (plan 07-01 active)
 
-**Goal:** Align implementation approach with a PC-client plugin architecture and the reference repository `message-bridge-opencode-plugin`.
-**Requirements**: TBD
+**Goal:** Close plugin+gateway architecture alignment gaps against `message-bridge-opencode-plugin` with auditable governance artifacts and release gates.
+**Requirements**: P07-BASE-01, P07-REF-01, P07-COMPAT-01, P07-VERSION-01, P07-GATE-01, P07-EVID-01, P07-GOV-01
 **Depends on:** Phase 6
-**Plans:** 0 plans
+**Plans:** 4 plans
+
+**Scope boundary (in):** `pc-agent-plugin` + gateway contract alignment and governance closure.
+**Scope boundary (out):** web-demo capability expansion, skill-service feature expansion, and mobile parity work.
+
+**Success Criteria:**
+1. Phase-07 alignment baseline package exists with requirement mapping, gap checklist, and runbook artifacts.
+2. Reference baseline snapshot for `message-bridge-opencode-plugin` is reproducible and records `reference_repo`, `reference_tag_or_commit`, `snapshot_date_utc`, and `diff_scope`.
+3. Compatibility policy is explicit and testable: backward compatible, additive-only changes by default, and controlled deprecation handling.
+4. Hard-gate inventory covers plugin no-drift, host integration, CLI real-chain, and gateway auth/resume regression checks.
+5. Evidence and waiver governance fields are standardized for audit (`evidence_id`, owner, status, outcome, expiration).
 
 Plans:
-- [ ] TBD (run `$gsd-plan-phase 7` to break down)
+- [ ] 07-01-PLAN.md - publish provisional requirements and baseline governance package
+- [ ] 07-02-PLAN.md - continue alignment closure execution and compatibility governance
+- [ ] 07-03-PLAN.md - continue hard-gate and evidence baseline implementation
+- [ ] 07-04-PLAN.md - closure verification and planning tracker synchronization
 
 ## Requirement Coverage
 
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing Phase 6 Plan 06-07*
+*Last updated: 2026-03-04 during Phase 7 Plan 07-01 execution*
 
