@@ -8,10 +8,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.chatcui.gateway.observability.BridgeMetricsRegistry;
 import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.chatcui.gateway.relay.UnknownOwnerRecoveryWorker;
+import com.chatcui.gateway.routing.RouteOwnershipRecord;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -144,6 +149,71 @@ class DeliveryRetryQueueTest {
         assertHasStableTagKeys(meterRegistry);
     }
 
+    @Test
+    void unknownOwnerRecoveryRetriesWithinFifteenMinuteWindow() {
+        AtomicInteger retryAttempts = new AtomicInteger();
+        MutableClock clock = new MutableClock(Instant.parse("2026-03-04T00:00:00Z"));
+        UnknownOwnerRecoveryWorker worker = new UnknownOwnerRecoveryWorker(
+                Duration.ofMinutes(15),
+                clock,
+                (tenantId, sessionId) -> java.util.Optional.of(new RouteOwnershipRecord(
+                        tenantId,
+                        sessionId,
+                        19L,
+                        "skill-owner-a",
+                        "gateway-owner-b",
+                        null,
+                        clock.instant())),
+                (entry, routeRecord) -> retryAttempts.incrementAndGet());
+        UnknownOwnerRecoveryWorker.RecoveryEntry entry = new UnknownOwnerRecoveryWorker.RecoveryEntry(
+                "tenant-a",
+                "session-a",
+                "turn-a",
+                4L,
+                "skill.turn.delta",
+                "trace-a",
+                clock.instant(),
+                0L);
+
+        UnknownOwnerRecoveryWorker.RecoveryResult result = worker.process(entry);
+
+        assertEquals(UnknownOwnerRecoveryWorker.RecoveryStatus.RETRIED, result.status());
+        assertEquals(1, retryAttempts.get());
+        assertEquals(19L, result.routeVersion());
+        assertEquals("trace-a", result.traceId());
+        assertNull(result.errorCode());
+        assertNull(result.nextAction());
+    }
+
+    @Test
+    void unknownOwnerRecoveryExpiresWithDeterministicTerminalEnvelope() {
+        MutableClock clock = new MutableClock(Instant.parse("2026-03-04T00:16:00Z"));
+        UnknownOwnerRecoveryWorker worker = new UnknownOwnerRecoveryWorker(
+                Duration.ofMinutes(15),
+                clock,
+                (tenantId, sessionId) -> java.util.Optional.empty(),
+                (entry, routeRecord) -> {
+                    throw new AssertionError("retry should not run after replay-window expiry");
+                });
+        UnknownOwnerRecoveryWorker.RecoveryEntry entry = new UnknownOwnerRecoveryWorker.RecoveryEntry(
+                "tenant-a",
+                "session-a",
+                "turn-a",
+                4L,
+                "skill.turn.delta",
+                "trace-timeout",
+                Instant.parse("2026-03-04T00:00:00Z"),
+                31L);
+
+        UnknownOwnerRecoveryWorker.RecoveryResult result = worker.process(entry);
+
+        assertEquals(UnknownOwnerRecoveryWorker.RecoveryStatus.REPLAY_WINDOW_EXPIRED, result.status());
+        assertEquals("ROUTE_REPLAY_WINDOW_EXPIRED", result.errorCode());
+        assertEquals("restart_session", result.nextAction());
+        assertEquals("trace-timeout", result.traceId());
+        assertEquals(31L, result.routeVersion());
+    }
+
     private double counterCount(
             SimpleMeterRegistry registry,
             String name,
@@ -193,5 +263,28 @@ class DeliveryRetryQueueTest {
     @FunctionalInterface
     private interface Check {
         boolean evaluate();
+    }
+
+    private static final class MutableClock extends Clock {
+        private Instant current;
+
+        private MutableClock(Instant current) {
+            this.current = current;
+        }
+
+        @Override
+        public ZoneOffset getZone() {
+            return ZoneOffset.UTC;
+        }
+
+        @Override
+        public Clock withZone(java.time.ZoneId zone) {
+            return this;
+        }
+
+        @Override
+        public Instant instant() {
+            return current;
+        }
     }
 }
