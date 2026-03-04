@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.chatcui.skill.persistence.mapper.SendbackRecordMapper">
+
+    <resultMap id="SendbackRecordMap" type="com.chatcui.skill.persistence.model.SendbackRecord">
+        <constructor>
+            <arg column="request_id" javaType="java.lang.String"/>
+            <arg column="tenant_id" javaType="java.lang.String"/>
+            <arg column="client_id" javaType="java.lang.String"/>
+            <arg column="session_id" javaType="java.lang.String"/>
+            <arg column="turn_id" javaType="java.lang.String"/>
+            <arg column="trace_id" javaType="java.lang.String"/>
+            <arg column="conversation_id" javaType="java.lang.String"/>
+            <arg column="selected_text" javaType="java.lang.String"/>
+            <arg column="message_text" javaType="java.lang.String"/>
+            <arg column="send_status" javaType="java.lang.String"/>
+            <arg column="im_message_id" javaType="java.lang.String"/>
+            <arg column="error_code" javaType="java.lang.String"/>
+            <arg column="error_message" javaType="java.lang.String"/>
+            <arg column="created_at" javaType="java.time.LocalDateTime"/>
+        </constructor>
+    </resultMap>
+
+    <insert id="insert" parameterType="com.chatcui.skill.persistence.model.SendbackRecord">
+        INSERT INTO skill_sendback_record (
+            request_id,
+            tenant_id,
+            client_id,
+            session_id,
+            turn_id,
+            trace_id,
+            conversation_id,
+            selected_text,
+            message_text,
+            send_status,
+            im_message_id,
+            error_code,
+            error_message
+        ) VALUES (
+            #{requestId},
+            #{tenantId},
+            #{clientId},
+            #{sessionId},
+            #{turnId},
+            #{traceId},
+            #{conversationId},
+            #{selectedText},
+            #{messageText},
+            #{sendStatus},
+            #{imMessageId},
+            #{errorCode},
+            #{errorMessage}
+        )
+    </insert>
+
+    <select id="findByRequestId" resultMap="SendbackRecordMap">
+        SELECT request_id,
+               tenant_id,
+               client_id,
+               session_id,
+               turn_id,
+               trace_id,
+               conversation_id,
+               selected_text,
+               message_text,
+               send_status,
+               im_message_id,
+               error_code,
+               error_message,
+               created_at
+        FROM skill_sendback_record
+        WHERE request_id = #{requestId}
+        LIMIT 1
+    </select>
+</mapper>
+

@@ -14,20 +14,29 @@ class SkillTurnSchemaCompatibilityTest {
 
     @Test
     void migrationDefinesTablesAndRequiredIndexes() throws IOException {
-        String ddl = loadMigration().toLowerCase(Locale.ROOT);
-        assertTrue(ddl.contains("create table if not exists skill_turn_snapshot"));
-        assertTrue(ddl.contains("create table if not exists skill_turn_delivery"));
-        assertTrue(ddl.contains("unique key uk_session_turn_seq (session_id, turn_id, seq)"));
+        String turnDdl = loadMigration("V1__skill_turn_tables.sql").toLowerCase(Locale.ROOT);
+        assertTrue(turnDdl.contains("create table if not exists skill_turn_snapshot"));
+        assertTrue(turnDdl.contains("create table if not exists skill_turn_delivery"));
+        assertTrue(turnDdl.contains("unique key uk_session_turn_seq (session_id, turn_id, seq)"));
     }
 
     @Test
     void migrationDefinesAscendingHistoryReplayIndexes() throws IOException {
-        String ddl = loadMigration().toLowerCase(Locale.ROOT);
+        String ddl = loadMigration("V1__skill_turn_tables.sql").toLowerCase(Locale.ROOT);
         assertTrue(ddl.contains("key idx_snapshot_session_created_turn (session_id, created_at, turn_id)"));
     }
 
-    private String loadMigration() throws IOException {
-        Path migration = Path.of("src", "main", "resources", "db", "migration", "V1__skill_turn_tables.sql");
+    @Test
+    void sendbackMigrationDefinesCorrelationTableAndIndexes() throws IOException {
+        String ddl = loadMigration("V2__skill_sendback_record.sql").toLowerCase(Locale.ROOT);
+        assertTrue(ddl.contains("create table if not exists skill_sendback_record"));
+        assertTrue(ddl.contains("unique key uk_sendback_request_id (request_id)"));
+        assertTrue(ddl.contains("key idx_sendback_session_turn_created (session_id, turn_id, created_at)"));
+        assertTrue(ddl.contains("key idx_sendback_trace_id (trace_id)"));
+    }
+
+    private String loadMigration(String fileName) throws IOException {
+        Path migration = Path.of("src", "main", "resources", "db", "migration", fileName);
         return Files.readString(migration, StandardCharsets.UTF_8);
     }
 }
