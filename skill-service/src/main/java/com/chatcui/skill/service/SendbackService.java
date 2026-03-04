@@ -5,11 +5,18 @@ import com.chatcui.skill.persistence.mapper.SendbackRecordMapper;
 import com.chatcui.skill.persistence.mapper.TurnRecordMapper;
 import com.chatcui.skill.persistence.model.SendbackRecord;
 import com.chatcui.skill.persistence.model.TurnRecord;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -19,13 +26,14 @@ public class SendbackService {
     private final SendbackRecordMapper sendbackRecordMapper;
     private final ImMessageGateway imMessageGateway;
     private final Clock clock;
+    private String idempotencyHashAlgorithm;
 
     public SendbackService(
             TurnRecordMapper turnRecordMapper,
             SendbackRecordMapper sendbackRecordMapper,
             ImMessageGateway imMessageGateway
     ) {
-        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, Clock.systemUTC());
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, Clock.systemUTC(), "SHA-256");
     }
 
     SendbackService(
@@ -34,10 +42,26 @@ public class SendbackService {
             ImMessageGateway imMessageGateway,
             Clock clock
     ) {
+        this(turnRecordMapper, sendbackRecordMapper, imMessageGateway, clock, "SHA-256");
+    }
+
+    SendbackService(
+            TurnRecordMapper turnRecordMapper,
+            SendbackRecordMapper sendbackRecordMapper,
+            ImMessageGateway imMessageGateway,
+            Clock clock,
+            String idempotencyHashAlgorithm
+    ) {
         this.turnRecordMapper = turnRecordMapper;
         this.sendbackRecordMapper = sendbackRecordMapper;
         this.imMessageGateway = imMessageGateway;
         this.clock = clock;
+        this.idempotencyHashAlgorithm = normalizeHashAlgorithm(idempotencyHashAlgorithm);
+    }
+
+    @Value("${skill.sendback.idempotency.hash-algorithm:SHA-256}")
+    void setIdempotencyHashAlgorithm(String idempotencyHashAlgorithm) {
+        this.idempotencyHashAlgorithm = normalizeHashAlgorithm(idempotencyHashAlgorithm);
     }
 
     public SendbackResponse send(SendCommand command) {
@@ -65,6 +89,12 @@ public class SendbackService {
         }
 
         String messageText = normalizeMessageText(command.messageText(), selectedText);
+        String idempotencyKey = deriveIdempotencyKey(command, selectedText, messageText);
+        Optional<SendbackRecord> existing = sendbackRecordMapper.findByIdempotencyKey(idempotencyKey);
+        if (existing.isPresent()) {
+            return replayExistingResult(existing.get(), command.sessionId(), command.turnId());
+        }
+
         String traceId = normalizeTraceId(command.traceId(), source.traceId());
         String requestId = "sendback-" + UUID.randomUUID();
 
@@ -79,6 +109,7 @@ public class SendbackService {
             Instant sentAt = result.sentAt() == null ? Instant.now(clock) : result.sentAt();
             sendbackRecordMapper.insert(new SendbackRecord(
                     requestId,
+                    idempotencyKey,
                     command.tenantId(),
                     command.clientId(),
                     command.sessionId(),
@@ -105,6 +136,7 @@ public class SendbackService {
         } catch (ImMessageGateway.ImSendException ex) {
             sendbackRecordMapper.insert(new SendbackRecord(
                     requestId,
+                    idempotencyKey,
                     command.tenantId(),
                     command.clientId(),
                     command.sessionId(),
@@ -141,6 +173,34 @@ public class SendbackService {
         return normalized;
     }
 
+    private String deriveIdempotencyKey(SendCommand command, String selectedText, String messageText) {
+        String contentFingerprint = hashHex(selectedText + "\n" + messageText);
+        String keySource = String.join(
+                "|",
+                command.tenantId(),
+                command.clientId(),
+                command.sessionId(),
+                command.turnId(),
+                command.conversationId(),
+                contentFingerprint
+        );
+        return "idem-" + hashHex(keySource);
+    }
+
+    private String hashHex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance(idempotencyHashAlgorithm);
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            StringBuilder builder = new StringBuilder(hash.length * 2);
+            for (byte b : hash) {
+                builder.append(String.format("%02x", b));
+            }
+            return builder.toString();
+        } catch (NoSuchAlgorithmException ex) {
+            throw new IllegalStateException("unsupported idempotency hash algorithm: " + idempotencyHashAlgorithm, ex);
+        }
+    }
+
     private String normalizeTraceId(String traceId, String sourceTraceId) {
         if (traceId != null && !traceId.isBlank()) {
             return traceId;
@@ -149,6 +209,41 @@ public class SendbackService {
             return sourceTraceId;
         }
         return "trace-sendback-" + UUID.randomUUID();
+    }
+
+    private SendbackResponse replayExistingResult(SendbackRecord existing, String sessionId, String turnId) {
+        if ("failed".equalsIgnoreCase(existing.sendStatus())) {
+            String code = existing.errorCode() == null || existing.errorCode().isBlank()
+                    ? "IM_SEND_FAILED"
+                    : existing.errorCode();
+            String message = existing.errorMessage() == null || existing.errorMessage().isBlank()
+                    ? "IM sendback request failed previously."
+                    : existing.errorMessage();
+            throw new SendbackFailedException(code, message);
+        }
+        return new SendbackResponse(
+                existing.requestId(),
+                sessionId,
+                turnId,
+                normalizeTraceId(existing.traceId(), null),
+                existing.sendStatus(),
+                existing.imMessageId(),
+                formatCreatedAt(existing.createdAt())
+        );
+    }
+
+    private String formatCreatedAt(LocalDateTime createdAt) {
+        if (createdAt == null) {
+            return Instant.now(clock).toString();
+        }
+        return createdAt.toInstant(ZoneOffset.UTC).toString();
+    }
+
+    private String normalizeHashAlgorithm(String hashAlgorithm) {
+        if (hashAlgorithm == null || hashAlgorithm.isBlank()) {
+            return "SHA-256";
+        }
+        return hashAlgorithm.trim();
     }
 
     private void requireValue(String value, String field) {
@@ -194,4 +289,3 @@ public class SendbackService {
         }
     }
 }
-

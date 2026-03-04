@@ -130,5 +130,52 @@ class SendbackControllerIntegrationTest {
                 .andExpect(jsonPath("$.error.code").value("IM_CHANNEL_UNAVAILABLE"))
                 .andExpect(jsonPath("$.error.message").value("IM channel is unavailable. Please retry."));
     }
-}
 
+    @Test
+    void duplicateRetryReturnsDeterministicPriorResponseContract() throws Exception {
+        SendbackResponse replayed = new SendbackResponse(
+                "sendback-existing",
+                "session-1",
+                "turn-1",
+                "trace-1",
+                "sent",
+                "im-msg-1",
+                "2026-03-04T00:00:00Z"
+        );
+        when(sendbackService.send(any())).thenReturn(replayed, replayed);
+
+        mockMvc.perform(post("/sessions/session-1/sendback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tenant_id":"tenant-1",
+                                  "client_id":"client-1",
+                                  "turn_id":"turn-1",
+                                  "trace_id":"trace-1",
+                                  "conversation_id":"conversation-1",
+                                  "selected_text":"answer",
+                                  "message_text":"answer"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.request_id").value("sendback-existing"))
+                .andExpect(jsonPath("$.trace_id").value("trace-1"));
+
+        mockMvc.perform(post("/sessions/session-1/sendback")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "tenant_id":"tenant-1",
+                                  "client_id":"client-1",
+                                  "turn_id":"turn-1",
+                                  "trace_id":"trace-retry",
+                                  "conversation_id":"conversation-1",
+                                  "selected_text":"answer",
+                                  "message_text":"answer"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.request_id").value("sendback-existing"))
+                .andExpect(jsonPath("$.trace_id").value("trace-1"));
+    }
+}

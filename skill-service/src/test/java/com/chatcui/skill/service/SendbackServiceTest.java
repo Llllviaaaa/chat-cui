@@ -12,12 +12,16 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -89,6 +93,79 @@ class SendbackServiceTest {
     }
 
     @Test
+    void duplicateRequestReturnsPersistedResultWithoutSecondImSend() {
+        SendbackService.SendCommand command = command("answer");
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(sendbackRecordMapper.findByIdempotencyKey(anyString()))
+                .thenReturn(Optional.of(existingRecord("request-existing", "sent", "im-msg-existing", null, null)));
+
+        SendbackResponse response = service.send(command);
+
+        assertEquals("request-existing", response.requestId());
+        assertEquals("sent", response.sendStatus());
+        assertEquals("im-msg-existing", response.imMessageId());
+        verify(imMessageGateway, never()).send(any());
+        verify(sendbackRecordMapper, never()).insert(any(SendbackRecord.class));
+    }
+
+    @Test
+    void duplicateFailureReplaysActionableErrorWithoutSecondImSend() {
+        SendbackService.SendCommand command = command("answer");
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(sendbackRecordMapper.findByIdempotencyKey(anyString()))
+                .thenReturn(Optional.of(existingRecord(
+                        "request-failed",
+                        "failed",
+                        null,
+                        "IM_CHANNEL_UNAVAILABLE",
+                        "IM channel is unavailable. Please retry."
+                )));
+
+        SendbackService.SendbackFailedException error =
+                assertThrows(SendbackService.SendbackFailedException.class, () -> service.send(command));
+
+        assertEquals("IM_CHANNEL_UNAVAILABLE", error.code());
+        assertEquals("IM channel is unavailable. Please retry.", error.getMessage());
+        verify(imMessageGateway, never()).send(any());
+        verify(sendbackRecordMapper, never()).insert(any(SendbackRecord.class));
+    }
+
+    @Test
+    void idempotencyKeyIsStableAcrossTraceChanges() {
+        SendbackService.SendCommand first = command("answer");
+        SendbackService.SendCommand second = new SendbackService.SendCommand(
+                "tenant-1",
+                "client-1",
+                "session-1",
+                "turn-1",
+                "trace-2",
+                "conversation-1",
+                "answer",
+                "answer"
+        );
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(sendbackRecordMapper.findByIdempotencyKey(anyString()))
+                .thenReturn(Optional.empty())
+                .thenReturn(Optional.of(existingRecord("request-existing", "sent", "im-msg-existing", null, null)));
+        when(imMessageGateway.send(any()))
+                .thenReturn(new ImMessageGateway.ImSendResult("im-msg-1", Instant.parse("2026-03-04T00:00:00Z")));
+
+        service.send(first);
+        service.send(second);
+
+        org.mockito.ArgumentCaptor<String> keyCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(sendbackRecordMapper, org.mockito.Mockito.times(2)).findByIdempotencyKey(keyCaptor.capture());
+        assertEquals(keyCaptor.getAllValues().get(0), keyCaptor.getAllValues().get(1));
+        assertTrue(Pattern.compile("^idem-[0-9a-f]{64}$").matcher(keyCaptor.getAllValues().get(0)).matches());
+    }
+
+    @Test
     void nonAssistantTurnCannotBeUsedForSendback() {
         SendbackService.SendCommand command = command("answer");
         when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
@@ -147,5 +224,30 @@ class SendbackServiceTest {
         }
         return expected.equals(actual);
     }
-}
 
+    private SendbackRecord existingRecord(
+            String requestId,
+            String status,
+            String messageId,
+            String errorCode,
+            String errorMessage
+    ) {
+        return new SendbackRecord(
+                requestId,
+                "idem-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "tenant-1",
+                "client-1",
+                "session-1",
+                "turn-1",
+                "trace-1",
+                "conversation-1",
+                "answer",
+                "answer",
+                status,
+                messageId,
+                errorCode,
+                errorMessage,
+                LocalDateTime.parse("2026-03-04T00:00:00")
+        );
+    }
+}

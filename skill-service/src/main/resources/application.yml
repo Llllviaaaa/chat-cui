@@ -12,3 +12,8 @@ mybatis:
   type-aliases-package: com.chatcui.skill
   configuration:
     map-underscore-to-camel-case: false
+
+skill:
+  sendback:
+    idempotency:
+      hash-algorithm: ${SKILL_SENDBACK_IDEMPOTENCY_HASH_ALGORITHM:SHA-256}
