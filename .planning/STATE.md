@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 6 - Reliability + Observability Hardening
+**Current focus:** Phase 7 - PC Agent Plugin Architecture Alignment (pending planning kickoff)
 
 ## Artifacts
 
@@ -27,8 +27,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 3 | Skill Service Persistence APIs | Complete |
 | 4 | Interaction Flow + Web UI Demo | Complete |
 | 5 | Sendback to IM | Complete |
-| 6 | Reliability + Observability Hardening | In Progress |
-| 7 | PC Agent Plugin Architecture Alignment | Pending |
+| 6 | Reliability + Observability Hardening | Complete |
+| 7 | PC Agent Plugin Architecture Alignment | Pending (Next Focus) |
 
 ## Accumulated Context
 
@@ -101,8 +101,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Decision: Reliability meters in gateway and skill-service are constrained to stable labels (`component`, `failure_class`, `outcome`, `retryable`) with no request identifiers.
 - Decision: Sendback instrumentation emits explicit `success|failure|dedup` outcomes so replay-safe traffic is visible separately from fresh failures.
 - Decision: Phase 6 baseline runbook now maps failure classes to dashboard panels and default alert thresholds for rollout operations.
-- Next pending step: Execute Phase 6 Plan 06-06.
+- Completed: Phase 6 Plan 06-06 with acceptance evidence, verification closure, and tracker synchronization.
+- Acceptance evidence: `.planning/phases/06-reliability-observability-hardening/06-ACCEPTANCE-EVIDENCE.md`
+- Verification report: `.planning/phases/06-reliability-observability-hardening/06-VERIFICATION.md`
+- Decision: Phase 6 requirement closure is now audit-backed for `BRG-04` reconnect/resume reliability and `DEM-02` cross-service traceability.
+- Next pending step: Plan Phase 7 implementation breakdown.
 
 ## Next Command
 
-`$gsd-execute-phase 6`
+`$gsd-plan-phase 7`
