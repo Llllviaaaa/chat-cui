@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
-status: phase_in_progress
-last_updated: "2026-03-04T13:46:14Z"
+status: phase_complete
+last_updated: "2026-03-04T14:10:00Z"
 progress:
   total_phases: 9
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 42
-  completed_plans: 41
+  completed_plans: 42
 ---
 
 # STATE
@@ -21,7 +21,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 8 execution in progress - distributed multi-instance precise OpenCode message delivery to target client user
+**Current focus:** Phase 8 complete - distributed multi-instance precise OpenCode message delivery with observability and requirement-level evidence closure
 
 ## Artifacts
 
@@ -51,6 +51,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 - Phase 05: Sendback to IM
 - Phase 06: Reliability + Observability Hardening
 - Phase 07: PC Agent Plugin Architecture Alignment
+- Phase 08: AI-Gateway + Skill-Service Distributed OpenCode Precise Delivery
 
 ## Audit Outcome
 
@@ -71,9 +72,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 - Completed: `08-01-PLAN.md` (Redis route truth + CAS owner fence contract baseline)
 - Completed: `08-02-PLAN.md` (owner-first relay pipeline with first-hop gateway relay + skill-service consume/dispatch dedupe path)
 - Completed: `08-03-PLAN.md` (two-stage delivery acknowledgement, bounded unknown-owner replay window, and OWNER_FENCED resume decisions)
-- Current phase progress: `3/4` plans complete in Phase 8
+- Completed: `08-04-PLAN.md` (route/fence/relay/ack/recovery observability instrumentation + phase verification/evidence artifacts)
+- Current phase progress: `4/4` plans complete in Phase 8 (`Complete`)
 
-### Recent Decisions (08-01, 08-02, 08-03)
+### Recent Decisions (08-01, 08-02, 08-03, 08-04)
 
 - Route key format standardized as `chatcui:route:{tenant_id:session_id}` to remain Redis Cluster slot-safe.
 - Owner migration result model standardized to explicit `APPLIED / VERSION_CONFLICT / MISSING`.
@@ -84,13 +86,16 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 - Delivery lifecycle is now explicit two-stage (`gateway_owner_accepted` then `client_delivered`/`client_delivery_timeout`) with deterministic timeout metadata.
 - Unknown-owner replay is bounded to 15 minutes; expired routes terminate deterministically with `ROUTE_REPLAY_WINDOW_EXPIRED`.
 - Resume coordinator decisions now support route-truth fencing and return `OWNER_FENCED` with `route_version` diagnostics for stale owners.
+- Gateway observability now includes dedicated `chatcui.gateway.route.outcomes`, `chatcui.gateway.relay.outcomes`, and `chatcui.gateway.ack.outcomes` series with low-cardinality tags.
+- Skill-service relay observability now includes `chatcui.skill.relay.outcomes` with deterministic outcome taxonomy (`relay_success`, `relay_timeout`, `owner_fenced`, `replay_window_expired`, `duplicate_dropped`).
+- Phase-08 closure now tracks UTC-timestamped verification evidence for plans 01-04 in one acceptance ledger, mapped to all `P08-*` requirements.
 
 ## Session Continuity
 
 Last session: 2026-03-04 (phase 8 plan execution)  
-Stopped at: Completed 08-03-PLAN.md  
-Resume file: `.planning/phases/08-ai-gateway-skill-service-opencode/08-04-PLAN.md`
+Stopped at: Completed 08-04-PLAN.md  
+Resume file: none (phase complete)
 
 ## Next Command
 
-`$gsd-execute-phase 8`
+`$gsd-complete-milestone`

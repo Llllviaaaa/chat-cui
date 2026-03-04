@@ -11,7 +11,7 @@
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
-- Completed phases: 8 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04, Phase 4 verified on 2026-03-04, Phase 5 verified on 2026-03-04, Phase 6 verified on 2026-03-04, Phase 7 verified on 2026-03-04)
+- Completed phases: 9 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04, Phase 4 verified on 2026-03-04, Phase 5 verified on 2026-03-04, Phase 6 verified on 2026-03-04, Phase 7 verified on 2026-03-04, Phase 8 verified on 2026-03-04)
 
 ## Phase Overview
 
@@ -25,6 +25,7 @@
 | 5 | Sendback to IM | Let user select output and send as IM message safely | SKL-04, SVC-04, IMS-01, IMS-02, IMS-03 | 5 |
 | 6 | Reliability + Observability Hardening | Add reconnect and cross-service tracing for stable integration | BRG-04, DEM-02 | 4 |
 | 7 | PC Agent Plugin Architecture Alignment | Close plugin+gateway alignment against `message-bridge-opencode-plugin` with auditable governance gates | P07-BASE-01, P07-REF-01, P07-COMPAT-01, P07-VERSION-01, P07-GATE-01, P07-EVID-01, P07-GOV-01 | 5 |
+| 8 | AI-Gateway + Skill-Service Distributed OpenCode Precise Delivery | Guarantee precise target-user delivery across distributed gateway/skill-service topology with route truth, relay, ack, recovery, and observability closure | P08-ROUTE-01, P08-FENCE-01, P08-RELAY-01, P08-DEDUPE-01, P08-ACK-01, P08-RECOVERY-01, P08-OBS-01 | 5 |
 
 ## Phase Details
 
@@ -204,12 +205,12 @@ All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one pha
 
 ### Phase 8: AI-Gateway + Skill-Service Distributed OpenCode Precise Delivery
 
-**Status:** In Progress (started 2026-03-04)
+**Status:** Complete (verified 2026-03-04)
 
 **Goal:** Guarantee OpenCode messages are delivered to the correct target client user under distributed multi-instance `gateway` + `skill-service` topology, without wrong delivery, duplicate delivery, out-of-order replay, or ghost writes.
 **Requirements**: P08-ROUTE-01, P08-FENCE-01, P08-RELAY-01, P08-DEDUPE-01, P08-ACK-01, P08-RECOVERY-01, P08-OBS-01
 **Depends on:** Phase 7
-**Plans:** 3/4 plans complete
+**Plans:** 4/4 plans complete
 
 **Success Criteria:**
 1. Redis route table becomes source of truth keyed by `tenant_id + session_id`, with CAS versioning and immediate owner fence.
@@ -222,9 +223,9 @@ Plans:
 - [x] 08-01-PLAN.md - Redis route truth, CAS migration, and owner fence contract foundation
 - [x] 08-02-PLAN.md - cross-instance relay pipeline (`gateway -> skill-service owner -> target gateway/client`) with full-path dedupe
 - [x] 08-03-PLAN.md - two-stage ack, unknown-owner recovery window, and fenced-owner deterministic failure semantics
-- [ ] 08-04-PLAN.md - route/fence/ack observability extension, integration evidence, and phase verification closure
+- [x] 08-04-PLAN.md - route/fence/ack observability extension, integration evidence, and phase verification closure
 
 ---
-*Last updated: 2026-03-04 after executing 08-03 (Phase 8 in progress)*
+*Last updated: 2026-03-04 after executing 08-04 (Phase 8 complete)*
 
 
