@@ -1,44 +1,45 @@
 package com.chatcui.gateway.integration;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.chatcui.gateway.persistence.DeliveryRetryQueue;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.chatcui.gateway.runtime.BridgePersistencePublisher;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.Test;
 
 class SkillPersistenceForwardingIntegrationTest {
-
-    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void forwardedDeltaFinalCompletedEventsPersistWithExpectedDeliveryTransitions() throws Exception {
         ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
         try {
             DeliveryStatusReporter reporter = new DeliveryStatusReporter();
-            List<SkillTurnForwardEvent> forwarded = new CopyOnWriteArrayList<>();
+            List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
             DeliveryRetryQueue retryQueue = new DeliveryRetryQueue(
                     scheduler,
                     2,
                     Duration.ofMillis(5),
-                    event -> {
-                    },
+                    persisted::add,
                     reporter
             );
-            SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(payload -> {
-                SkillTurnForwardEvent event = objectMapper.readValue(payload, SkillTurnForwardEvent.class);
-                forwarded.add(event);
-            }, retryQueue, Executors.newSingleThreadExecutor());
+            SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                    payload -> {
+                        throw new IllegalStateException("skill service unavailable");
+                    },
+                    retryQueue,
+                    executor
+            );
             BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
 
             SkillTurnForwardEvent delta = event("turn-shared-001", 1L, "delta", "draft");
@@ -49,16 +50,17 @@ class SkillPersistenceForwardingIntegrationTest {
             publisher.publish(fin.topic(), fin);
             publisher.publish(completed.topic(), completed);
 
-            assertTrue(waitUntil(() -> forwarded.size() == 3, 1500));
+            assertTrue(waitUntil(() -> persisted.size() == 3, 1500));
             assertTrue(waitUntil(() -> "saved".equals(reporter.currentStatus(delta).orElse(null)), 1000));
             assertTrue(waitUntil(() -> "saved".equals(reporter.currentStatus(fin).orElse(null)), 1000));
             assertTrue(waitUntil(() -> "saved".equals(reporter.currentStatus(completed).orElse(null)), 1000));
-            assertEquals(List.of(1L, 2L, 3L), forwarded.stream().map(SkillTurnForwardEvent::seq).toList());
-            assertEquals(List.of("delta", "final", "completed"), forwarded.stream().map(SkillTurnForwardEvent::eventType).toList());
+            assertEquals(List.of(1L, 2L, 3L), persisted.stream().map(SkillTurnForwardEvent::seq).toList());
+            assertEquals(List.of("delta", "final", "completed"), persisted.stream().map(SkillTurnForwardEvent::eventType).toList());
             assertEquals("saved", reporter.currentStatus(delta).orElseThrow());
             assertEquals("saved", reporter.currentStatus(fin).orElseThrow());
             assertEquals("saved", reporter.currentStatus(completed).orElseThrow());
         } finally {
+            executor.shutdownNow();
             scheduler.shutdownNow();
         }
     }

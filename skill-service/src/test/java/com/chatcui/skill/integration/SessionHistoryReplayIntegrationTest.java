@@ -43,8 +43,8 @@ class SessionHistoryReplayIntegrationTest {
                 page.items().stream().map(SessionHistoryResponse.HistoryItem::turnId).toList());
         assertEquals(List.of(1L, 2L, 3L, 4L, 5L),
                 page.items().stream().map(SessionHistoryResponse.HistoryItem::seq).toList());
-        assertEquals("saved", page.items().get(2).deliveryStatus());
-        assertEquals("saved", page.items().get(4).deliveryStatus());
+        assertEquals("delivered", page.items().get(2).deliveryStatus());
+        assertEquals("delivered", page.items().get(4).deliveryStatus());
     }
 
     @Test
