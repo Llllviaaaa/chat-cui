@@ -1,0 +1,290 @@
+:root {
+  color: #182030;
+  background: radial-gradient(circle at 20% 0%, #fff2db 0%, #f4f6fb 40%, #eef2ff 100%);
+  font-family: "IBM Plex Sans", "Segoe UI", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.top-bar {
+  margin-bottom: 14px;
+}
+
+.top-bar h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.top-bar p {
+  margin: 6px 0 0;
+  color: #50607d;
+}
+
+.chat-layout {
+  background: #ffffffd9;
+  border: 1px solid #d8dff0;
+  border-radius: 16px;
+  min-height: 72vh;
+  display: grid;
+  grid-template-rows: 1fr auto;
+  overflow: hidden;
+  position: relative;
+}
+
+.chat-timeline {
+  padding: 16px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.status-card {
+  border: 1px solid #d9e2f5;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.status-line {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.skill {
+  font-weight: 600;
+}
+
+.summary {
+  color: #314158;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.actions {
+  flex-shrink: 0;
+}
+
+.badge {
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 5px 8px;
+  text-transform: lowercase;
+}
+
+.badge-waiting {
+  background: #f4ebff;
+  color: #6141c1;
+}
+
+.badge-running {
+  background: #e8f2ff;
+  color: #1e5db3;
+}
+
+.badge-completed {
+  background: #e7f8ec;
+  color: #1f7b3f;
+}
+
+.badge-failed {
+  background: #ffe9e9;
+  color: #a13a3a;
+}
+
+.chat-input-area {
+  border-top: 1px solid #e2e8f7;
+  padding: 12px 16px 16px;
+  position: relative;
+  background: #fcfdff;
+}
+
+.chat-input-area label {
+  display: block;
+  font-size: 13px;
+  color: #5c6785;
+  margin-bottom: 6px;
+}
+
+.chat-input-area input {
+  width: 100%;
+  border: 1px solid #c9d4eb;
+  border-radius: 10px;
+  min-height: 42px;
+  padding: 0 12px;
+  font-size: 14px;
+}
+
+.slash-panel {
+  margin-top: 10px;
+  border: 1px solid #cad7f3;
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 8px;
+  background: #fff;
+}
+
+.panel-title {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: #5f6d8c;
+  font-weight: 700;
+}
+
+.skill-option {
+  border: 1px solid #cbdae9;
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: left;
+  background: #f6f9ff;
+}
+
+.skill-option.selected {
+  border-color: #2a6ed7;
+  background: #eaf2ff;
+}
+
+.slash-panel button,
+.overlay button {
+  min-height: 38px;
+  border-radius: 9px;
+  border: 1px solid #2a6ed7;
+  background: #2a6ed7;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.link-btn {
+  border: none;
+  background: transparent;
+  color: #2a6ed7;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
+.notice {
+  margin-top: 8px;
+  border: 1px solid #efd7a9;
+  background: #fff8e5;
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(180deg, #f7fbff 0%, #edf3ff 100%);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  z-index: 50;
+}
+
+.overlay-header {
+  padding: 14px 18px;
+  border-bottom: 1px solid #d9e3f7;
+  background: #ffffffd8;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.overlay-header h2 {
+  margin: 0;
+}
+
+.overlay-header p {
+  margin: 4px 0 0;
+  color: #50607d;
+}
+
+.overlay-history {
+  padding: 14px 18px;
+  overflow-y: auto;
+  display: grid;
+  gap: 10px;
+}
+
+.history-item {
+  border: 1px solid #dce5f8;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+}
+
+.history-item .meta {
+  display: inline-flex;
+  gap: 10px;
+  color: #5f6d8b;
+  font-size: 12px;
+}
+
+.history-item p {
+  margin: 8px 0 0;
+}
+
+.overlay-input {
+  border-top: 1px solid #d9e3f7;
+  background: #fff;
+  padding: 10px 14px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
+.overlay-input input {
+  border: 1px solid #cad7f3;
+  border-radius: 8px;
+  padding: 0 10px;
+  min-height: 38px;
+}
+
+.empty-state {
+  color: #667391;
+}
+
+@media (max-width: 800px) {
+  .app-shell {
+    padding: 12px;
+  }
+
+  .top-bar h1 {
+    font-size: 23px;
+  }
+
+  .status-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .actions {
+    width: 100%;
+  }
+}
