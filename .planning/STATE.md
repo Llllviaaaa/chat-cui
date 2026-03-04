@@ -96,7 +96,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Decision: Plugin CLI failures now emit required observability envelope fields while preserving existing auth result envelopes.
 - Decision: Gateway and skill-service persistence failures now share canonical `failure_class + retryable` semantics via typed enums/contracts.
 - Decision: Persistence boundary structured failure logs exclude raw payload text and keep only actionable correlation metadata.
-- Next pending step: Execute Phase 6 Plan 06-05.
+- Completed: Phase 6 Plan 06-05 with low-cardinality gateway/skill metrics wiring and observability baseline runbook.
+- Summary: `.planning/phases/06-reliability-observability-hardening/06-05-SUMMARY.md`
+- Decision: Reliability meters in gateway and skill-service are constrained to stable labels (`component`, `failure_class`, `outcome`, `retryable`) with no request identifiers.
+- Decision: Sendback instrumentation emits explicit `success|failure|dedup` outcomes so replay-safe traffic is visible separately from fresh failures.
+- Decision: Phase 6 baseline runbook now maps failure classes to dashboard panels and default alert thresholds for rollout operations.
+- Next pending step: Execute Phase 6 Plan 06-06.
 
 ## Next Command
 
