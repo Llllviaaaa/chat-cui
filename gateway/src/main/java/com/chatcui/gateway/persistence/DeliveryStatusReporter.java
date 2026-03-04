@@ -28,6 +28,6 @@ public class DeliveryStatusReporter implements SkillPersistenceForwarder.Deliver
     }
 
     private String tupleKey(SkillTurnForwardEvent event) {
-        return event.sessionId() + "|" + event.turnId() + "|" + event.seq();
+        return event.sessionId() + "|" + event.turnId() + "|" + event.seq() + "|" + event.topic();
     }
 }

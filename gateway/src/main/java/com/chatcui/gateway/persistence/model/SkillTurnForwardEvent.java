@@ -12,5 +12,21 @@ public record SkillTurnForwardEvent(
         @JsonProperty("actor") String actor,
         @JsonProperty("event_type") String eventType,
         @JsonProperty("payload") String payload,
-        @JsonProperty("topic") String topic) {
+        @JsonProperty("topic") String topic,
+        @JsonProperty("reason_code") String reasonCode,
+        @JsonProperty("next_action") String nextAction) {
+
+    public SkillTurnForwardEvent(
+            String tenantId,
+            String clientId,
+            String sessionId,
+            String turnId,
+            long seq,
+            String traceId,
+            String actor,
+            String eventType,
+            String payload,
+            String topic) {
+        this(tenantId, clientId, sessionId, turnId, seq, traceId, actor, eventType, payload, topic, null, null);
+    }
 }

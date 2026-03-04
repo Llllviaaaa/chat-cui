@@ -54,7 +54,7 @@ public class SkillPersistenceForwarder {
     }
 
     private String tupleKey(SkillTurnForwardEvent event) {
-        return event.sessionId() + "|" + event.turnId() + "|" + event.seq();
+        return event.sessionId() + "|" + event.turnId() + "|" + event.seq() + "|" + event.topic();
     }
 
     public record ForwardReceipt(boolean accepted, boolean duplicate, String receiveState) {
