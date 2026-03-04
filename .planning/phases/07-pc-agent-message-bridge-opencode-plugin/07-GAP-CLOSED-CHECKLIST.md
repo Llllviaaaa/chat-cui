@@ -12,8 +12,8 @@
 
 | Requirement | Alignment Item | status | owner | evidence_id | evidence_link | waiver_reference | Notes |
 |-------------|----------------|--------|-------|-------------|---------------|------------------|-------|
-| `P07-BASE-01` | Baseline package files are published and cross-linked | IN_PROGRESS | phase-07-owner | P07-BASE-01-PENDING | pending://phase-07/P07-BASE-01 | none | Initial package created in plan 07-01; evidence to be finalized in later plans |
-| `P07-REF-01` | Reference snapshot record for `message-bridge-opencode-plugin` is captured | OPEN | phase-07-owner | P07-REF-01-PENDING | pending://phase-07/P07-REF-01 | none | Record must include required snapshot fields from runbook |
+| `P07-BASE-01` | Baseline package files are published and cross-linked | CLOSED | phase-07-owner | P07-BASE-01-20260304 | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-01-SUMMARY.md | none | Completed in plan 07-01 with mapping/checklist/runbook artifacts |
+| `P07-REF-01` | Reference snapshot protocol for `message-bridge-opencode-plugin` is defined | CLOSED | phase-07-owner | P07-REF-01-20260304 | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-ALIGNMENT-RUNBOOK.md#reference-baseline-snapshot-method-p07-ref-01 | none | Schema and required fields published; future plans populate concrete snapshot values |
 | `P07-COMPAT-01` | Additive compatibility policy is enforced by verification evidence | OPEN | phase-07-owner | P07-COMPAT-01-PENDING | pending://phase-07/P07-COMPAT-01 | none | No contract-breaking removals permitted |
 | `P07-VERSION-01` | Contract version signal coverage is documented for key events | OPEN | phase-07-owner | P07-VERSION-01-PENDING | pending://phase-07/P07-VERSION-01 | none | Key event inventory and version assertions required |
 | `P07-GATE-01` | Full hard-gate command set is executable and release-blocking | OPEN | phase-07-owner | P07-GATE-01-PENDING | pending://phase-07/P07-GATE-01 | none | Must cover plugin no-drift, host integration, CLI real-chain, gateway auth/resume |
