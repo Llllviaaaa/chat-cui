@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -26,7 +25,8 @@ class SkillPersistenceForwarderTest {
         SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(payload -> {
             capturedPayload.set(payload);
             latch.countDown();
-        }, Runnable::run, Executors.newSingleThreadExecutor());
+        }, (event, error) -> {
+        }, Executors.newSingleThreadExecutor());
 
         SkillTurnForwardEvent event = sampleEvent(3L);
         forwarder.forward(event);
@@ -46,7 +46,8 @@ class SkillPersistenceForwarderTest {
         SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(payload -> {
             Thread.sleep(200);
             throw new IllegalStateException("transport down");
-        }, Runnable::run, Executors.newSingleThreadExecutor());
+        }, (event, error) -> {
+        }, Executors.newSingleThreadExecutor());
 
         long started = System.nanoTime();
         SkillPersistenceForwarder.ForwardReceipt receipt = forwarder.forward(sampleEvent(4L));
@@ -63,7 +64,8 @@ class SkillPersistenceForwarderTest {
         SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(payload -> {
             attempts.incrementAndGet();
             latch.countDown();
-        }, Runnable::run, Executors.newSingleThreadExecutor());
+        }, (event, error) -> {
+        }, Executors.newSingleThreadExecutor());
 
         SkillTurnForwardEvent event = sampleEvent(10L);
         SkillPersistenceForwarder.ForwardReceipt first = forwarder.forward(event);
