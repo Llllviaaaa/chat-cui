@@ -21,12 +21,13 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Between milestones - prepare v1.1 scope and roadmap
+**Current focus:** Phase 8 added (not planned) - solve distributed multi-instance precise OpenCode message delivery to target client user
 
 ## Artifacts
 
 - Project: `.planning/PROJECT.md`
 - Config: `.planning/config.json`
+- Roadmap: `.planning/ROADMAP.md`
 - Milestone index: `.planning/MILESTONES.md`
 - Milestone archive:
   - `.planning/milestones/v1.0-ROADMAP.md`
@@ -59,6 +60,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 - Critical gaps: `0`
 - Residual debt note: Phase-07 reference baseline uses explicit local snapshot marker (`NO_REMOTE_CONFIGURED`) because repository remote metadata is unavailable in this workspace.
 
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 8 added: solve precise OpenCode message delivery to target client user across distributed `ai-gateway` + `skill-service` multi-instance topology.
+
 ## Session Continuity
 
 Last session: 2026-03-04 (milestone completion workflow)  
@@ -67,4 +74,4 @@ Resume file: `.planning/MILESTONES.md`
 
 ## Next Command
 
-`$gsd-new-milestone`
+`$gsd-plan-phase 8`
