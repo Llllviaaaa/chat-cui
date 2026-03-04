@@ -30,7 +30,7 @@ class AuthEntryIntegrationTest {
 
     @Test
     void validAuthAllowsEntry() {
-        AuthEntryInterceptor interceptor = buildInterceptor(true, true);
+        AuthEntryInterceptor interceptor = buildInterceptor(true, true, BridgeMetricsRegistry.noop());
         AuthRequest request = signedRequest("nonce-1", "session-1", NOW.getEpochSecond(), "secret-a");
 
         AuthEntryInterceptor.EntryDecision decision = interceptor.preHandle(request);
@@ -41,9 +41,9 @@ class AuthEntryIntegrationTest {
 
     @Test
     void missingMetadataRejectedWithDeterministicCode() {
-        AuthEntryInterceptor interceptor = buildInterceptor(true, true);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        AuthEntryInterceptor interceptor = buildInterceptor(true, true, metricsRegistry);
         AuthRequest invalid = new AuthRequest("", "tenant-a", "client-a", NOW.getEpochSecond(), "nonce", "session", "sig", "trace");
 
         AuthEntryInterceptor.EntryDecision decision = interceptor.preHandle(invalid);
@@ -59,9 +59,9 @@ class AuthEntryIntegrationTest {
 
     @Test
     void replayRequestRejected() {
-        AuthEntryInterceptor interceptor = buildInterceptor(true, true);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        AuthEntryInterceptor interceptor = buildInterceptor(true, true, metricsRegistry);
         AuthRequest request = signedRequest("nonce-2", "session-2", NOW.getEpochSecond(), "secret-a");
 
         AuthEntryInterceptor.EntryDecision first = interceptor.preHandle(request);
@@ -78,9 +78,9 @@ class AuthEntryIntegrationTest {
 
     @Test
     void cooldownReturnedAfterRepeatedInvalidSignature() {
-        AuthEntryInterceptor interceptor = buildInterceptor(true, true);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        AuthEntryInterceptor interceptor = buildInterceptor(true, true, metricsRegistry);
         AuthRequest invalid = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -103,7 +103,10 @@ class AuthEntryIntegrationTest {
                 true));
     }
 
-    private AuthEntryInterceptor buildInterceptor(boolean active, boolean permitted) {
+    private AuthEntryInterceptor buildInterceptor(
+            boolean active,
+            boolean permitted,
+            BridgeMetricsRegistry metricsRegistry) {
         Map<String, AuthCredentialRecord> credentials = Map.of(
                 "tenant-a|client-a|ak_live_1234",
                 new AuthCredentialRecord(
@@ -123,7 +126,7 @@ class AuthEntryIntegrationTest {
                 new FailureCooldownPolicy(Duration.ofSeconds(30), Duration.ofMinutes(5)),
                 new AuthService.Policy(Duration.ofMinutes(15), Duration.ofMinutes(5)),
                 Clock.fixed(NOW, ZoneOffset.UTC));
-        return new AuthEntryInterceptor(service, new ErrorResponseFactory());
+        return new AuthEntryInterceptor(service, new ErrorResponseFactory(), metricsRegistry);
     }
 
     private AuthRequest signedRequest(String nonce, String sessionId, long timestamp, String secret) {

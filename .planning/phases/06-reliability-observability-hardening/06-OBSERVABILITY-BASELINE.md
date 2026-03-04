@@ -15,6 +15,7 @@ This baseline defines the DEM-02 metrics contract after Phase 06 plans 04-05.
 |---|---|---|---|---|---|
 | `chatcui.gateway.bridge.reconnect.outcomes` | Counter | `gateway.bridge.reconnect` | `resumed`, `failed` | `bridge` | `true/false` |
 | `chatcui.gateway.bridge.resume.outcomes` | Counter | `gateway.bridge.resume` | `continue`, `dropped_duplicate`, `compensate_gap`, `terminal_failure` | `bridge` | `true/false` |
+| `chatcui.gateway.auth.outcomes` | Counter | `gateway.auth` | `missing_credential`, `invalid_signature`, `timestamp_out_of_window`, `replay_detected`, `cooldown_active`, `credential_disabled`, `permission_denied` | `auth` | `true/false` |
 | `chatcui.gateway.persistence.retry.outcomes` | Counter | `gateway.persistence.retry` | `pending`, `saved`, `failed` | `persistence` | `true/false` |
 | `chatcui.gateway.persistence.retry.duration` | Timer | `gateway.persistence.retry` | `saved`, `failed` | `persistence` | `true/false` |
 
@@ -32,18 +33,23 @@ This baseline defines the DEM-02 metrics contract after Phase 06 plans 04-05.
 - Split by: `component`, `outcome`, `failure_class`, `retryable`
 - Goal: detect reconnect degradation and resume anomaly spikes quickly
 
-2. **Persistence Delivery Retry Health (persistence)**
+2. **Gateway Authentication Failures (auth)**
+- Inputs: `chatcui.gateway.auth.outcomes`
+- Split by: `component`, `outcome`, `retryable`
+- Goal: distinguish credential/configuration failures from permission policy failures during session entry
+
+3. **Persistence Delivery Retry Health (persistence)**
 - Inputs: `chatcui.gateway.persistence.retry.outcomes`, `chatcui.gateway.persistence.retry.duration`
 - Split by: `outcome`, `retryable`
 - Goal: monitor backlog pressure (`pending`) and hard failures (`failed`)
 
-3. **Sendback Delivery Health (sendback)**
+4. **Sendback Delivery Health (sendback)**
 - Inputs: `chatcui.skill.sendback.outcomes`, `chatcui.skill.sendback.duration`
 - Split by: `outcome`, `retryable`
 - Goal: separate new sendback failures from duplicate replay (`dedup`)
 
-4. **Failure-Class Overview**
-- Aggregate counters by `failure_class` across gateway + skill-service metrics
+5. **Failure-Class Overview**
+- Aggregate counters by `failure_class` across gateway bridge/auth/persistence + skill-service metrics
 - Required classes visible: `auth`, `bridge`, `persistence`, `sendback`, `unknown`
 
 ## Default Alert Thresholds
@@ -61,5 +67,6 @@ This baseline defines the DEM-02 metrics contract after Phase 06 plans 04-05.
 
 1. Start triage at counters grouped by `failure_class`, then drill into `component` and `outcome`.
 2. Use `retryable=true` vs `retryable=false` to separate auto-recoverable vs terminal operational actions.
-3. For bridge and persistence incidents, correlate with structured logs using shared `trace_id` and tuple fields.
-4. Keep dashboard templates strict on allowed labels to prevent cardinality drift during future changes.
+3. For auth incidents, inspect `gateway.auth` outcomes first; `permission_denied` and `credential_disabled` usually require tenant/admin action.
+4. For bridge and persistence incidents, correlate with structured logs using shared `trace_id` and tuple fields.
+5. Keep dashboard templates strict on allowed labels to prevent cardinality drift during future changes.

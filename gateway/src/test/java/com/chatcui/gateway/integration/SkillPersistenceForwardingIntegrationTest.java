@@ -36,7 +36,8 @@ class SkillPersistenceForwardingIntegrationTest {
                     2,
                     Duration.ofMillis(5),
                     persisted::add,
-                    reporter
+                    reporter,
+                    metricsRegistry
             );
             SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
                     payload -> {
@@ -45,7 +46,7 @@ class SkillPersistenceForwardingIntegrationTest {
                     retryQueue,
                     executor
             );
-            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
+            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter, metricsRegistry);
 
             SkillTurnForwardEvent delta = event("turn-shared-001", 1L, "delta", "draft");
             SkillTurnForwardEvent fin = event("turn-shared-001", 2L, "final", "answer-final");
@@ -98,7 +99,8 @@ class SkillPersistenceForwardingIntegrationTest {
                     2,
                     Duration.ofMillis(5),
                     persisted::add,
-                    reporter
+                    reporter,
+                    metricsRegistry
             );
             SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
                     payload -> {
@@ -107,7 +109,7 @@ class SkillPersistenceForwardingIntegrationTest {
                     retryQueue,
                     executor
             );
-            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
+            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter, metricsRegistry);
 
             SkillTurnForwardEvent first = event("turn-shared-gap", 1L, "delta", "draft");
             SkillTurnForwardEvent gap = event("turn-shared-gap", 3L, "delta", "late-delta");
@@ -161,7 +163,8 @@ class SkillPersistenceForwardingIntegrationTest {
                     2,
                     Duration.ofMillis(5),
                     persisted::add,
-                    reporter
+                    reporter,
+                    metricsRegistry
             );
             SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
                     payload -> {
@@ -170,7 +173,7 @@ class SkillPersistenceForwardingIntegrationTest {
                     retryQueue,
                     executor
             );
-            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
+            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter, metricsRegistry);
 
             SkillTurnForwardEvent ownerA = event("turn-shared-terminal", 1L, "delta", "draft");
             SkillTurnForwardEvent ownerB = new SkillTurnForwardEvent(

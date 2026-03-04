@@ -29,9 +29,9 @@ class WsAuthFailureIntegrationTest {
 
     @Test
     void invalidSignatureUsesSharedAuthV1CodeAndCloseReason() {
-        WsAuthHandshakeInterceptor interceptor = buildInterceptor(true);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        WsAuthHandshakeInterceptor interceptor = buildInterceptor(true, metricsRegistry);
         AuthRequest invalid = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -53,9 +53,9 @@ class WsAuthFailureIntegrationTest {
 
     @Test
     void permissionDeniedUses403FamilyCloseCode() {
-        WsAuthHandshakeInterceptor interceptor = buildInterceptor(false);
         SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
         BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        WsAuthHandshakeInterceptor interceptor = buildInterceptor(false, metricsRegistry);
         AuthRequest request = new AuthRequest(
                 "ak_live_1234",
                 "tenant-a",
@@ -74,7 +74,7 @@ class WsAuthFailureIntegrationTest {
         assertEquals(1.0, counterCount(meterRegistry, "permission_denied", false));
     }
 
-    private WsAuthHandshakeInterceptor buildInterceptor(boolean permitted) {
+    private WsAuthHandshakeInterceptor buildInterceptor(boolean permitted, BridgeMetricsRegistry metricsRegistry) {
         Map<String, AuthCredentialRecord> credentials = Map.of(
                 "tenant-a|client-a|ak_live_1234",
                 new AuthCredentialRecord(
@@ -93,7 +93,7 @@ class WsAuthFailureIntegrationTest {
                 new FailureCooldownPolicy(Duration.ofSeconds(30), Duration.ofMinutes(5)),
                 new AuthService.Policy(Duration.ofMinutes(15), Duration.ofMinutes(5)),
                 Clock.fixed(NOW, ZoneOffset.UTC));
-        return new WsAuthHandshakeInterceptor(service, new ErrorResponseFactory());
+        return new WsAuthHandshakeInterceptor(service, new ErrorResponseFactory(), metricsRegistry);
     }
 
     private double counterCount(
