@@ -3,12 +3,17 @@ package com.chatcui.gateway.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.chatcui.gateway.observability.BridgeMetricsRegistry;
+import com.chatcui.gateway.observability.FailureClass;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.micrometer.core.instrument.Meter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
@@ -131,6 +136,104 @@ class BridgePersistencePublisherTest {
         assertEquals("skill.turn.error", terminal.topic());
         assertEquals("RESUME_OWNER_CONFLICT", terminal.reasonCode());
         assertEquals("restart_session", terminal.nextAction());
+    }
+
+    @Test
+    void resumeOutcomesEmitReconnectAndResumeCountersWithStableTags() throws Exception {
+        List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(3);
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> {
+                    persisted.add(fromPayload(payload));
+                    latch.countDown();
+                },
+                (event, error) -> {
+                },
+                Runnable::run);
+        BridgePersistencePublisher publisher =
+                new BridgePersistencePublisher(forwarder, new DeliveryStatusReporter(), metricsRegistry);
+
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 1L, "client-a"));
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 1L, "client-a"));
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 3L, "client-a"));
+        publisher.publish("skill.turn.delta", sampleEvent("skill.turn.delta", 4L, "client-b"));
+
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.resume.outcomes",
+                "gateway.bridge.resume",
+                "continue",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.resume.outcomes",
+                "gateway.bridge.resume",
+                "dropped_duplicate",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.resume.outcomes",
+                "gateway.bridge.resume",
+                "compensate_gap",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.resume.outcomes",
+                "gateway.bridge.resume",
+                "terminal_failure",
+                FailureClass.BRIDGE,
+                false));
+        assertEquals(3.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.reconnect.outcomes",
+                "gateway.bridge.reconnect",
+                "resumed",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.bridge.reconnect.outcomes",
+                "gateway.bridge.reconnect",
+                "failed",
+                FailureClass.BRIDGE,
+                false));
+        assertHasStableTagKeys(meterRegistry);
+    }
+
+    private double counterCount(
+            SimpleMeterRegistry registry,
+            String name,
+            String component,
+            String outcome,
+            FailureClass failureClass,
+            boolean retryable) {
+        return registry.find(name)
+                .tags(
+                        "component",
+                        component,
+                        "outcome",
+                        outcome,
+                        "failure_class",
+                        failureClass.value(),
+                        "retryable",
+                        Boolean.toString(retryable))
+                .counter()
+                .count();
+    }
+
+    private void assertHasStableTagKeys(SimpleMeterRegistry registry) {
+        Set<String> expected = Set.of("component", "failure_class", "outcome", "retryable");
+        for (Meter meter : registry.getMeters()) {
+            Set<String> actual =
+                    meter.getId().getTags().stream().map(tag -> tag.getKey()).collect(java.util.stream.Collectors.toSet());
+            assertEquals(expected, actual);
+        }
     }
 
     private SkillTurnForwardEvent sampleEvent(String topic, long seq, String clientId) {
