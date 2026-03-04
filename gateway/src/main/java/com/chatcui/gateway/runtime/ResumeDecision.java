@@ -71,6 +71,25 @@ public record ResumeDecision(
                         "incoming_owner", incomingOwner));
     }
 
+    public static ResumeDecision terminalOwnerFenced(
+            String sessionId,
+            String activeOwner,
+            String incomingOwner,
+            String fencedOwner,
+            long routeVersion) {
+        return new ResumeDecision(
+                Outcome.TERMINAL_FAILURE,
+                false,
+                "OWNER_FENCED",
+                "reroute_to_active_owner",
+                Map.of(
+                        "session_id", sessionId,
+                        "active_owner", activeOwner,
+                        "incoming_owner", incomingOwner,
+                        "fenced_owner", fencedOwner == null ? "" : fencedOwner,
+                        "route_version", routeVersion));
+    }
+
     public static ResumeDecision terminalInvalidAnchor(String sessionId, String turnId, long seq) {
         return new ResumeDecision(
                 Outcome.TERMINAL_FAILURE,
