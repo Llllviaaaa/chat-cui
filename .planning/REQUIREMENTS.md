@@ -64,10 +64,10 @@
 
 Scope lock: these requirements only cover `pc-agent-plugin` + gateway alignment closure and governance. They do not introduce web-demo, skill-service, or mobile feature expansion.
 
-- [ ] **P07-BASE-01**: Publish a complete phase-07 alignment baseline package with requirement mapping, gap checklist, and runbook artifacts.
+- [x] **P07-BASE-01**: Publish a complete phase-07 alignment baseline package with requirement mapping, gap checklist, and runbook artifacts.
   Completion signals: all three artifacts exist in `.planning/phases/07-pc-agent-message-bridge-opencode-plugin/` and include executable gate/evidence references.
-- [ ] **P07-REF-01**: Record a reproducible reference snapshot for `message-bridge-opencode-plugin` used for alignment claims.
-  Completion signals: snapshot record captures `reference_repo`, `reference_tag_or_commit`, `snapshot_date_utc`, and `diff_scope`, with an auditable evidence identifier.
+- [x] **P07-REF-01**: Define a reproducible reference snapshot protocol for `message-bridge-opencode-plugin` used by downstream alignment claims.
+  Completion signals: runbook includes required snapshot fields (`reference_repo`, `reference_tag_or_commit`, `snapshot_date_utc`, `diff_scope`) and a reusable record template with `evidence_id`.
 - [ ] **P07-COMPAT-01**: Enforce backward-compatible, additive-only contract alignment between plugin host boundary and gateway-facing bridge behaviors.
   Completion signals: compatibility assertions and documented policy show no breaking removals and clear handling for additive fields/events.
 - [ ] **P07-VERSION-01**: Standardize explicit contract-version signaling for key runtime/plugin boundary events involved in alignment evidence.
@@ -136,8 +136,8 @@ Scope lock: these requirements only cover `pc-agent-plugin` + gateway alignment 
 | P01.1-SEC-01 | Phase 01.1 | Complete |
 | P01.1-MIG-01 | Phase 01.1 | Complete |
 | P01.1-DRIFT-01 | Phase 01.1 | Complete |
-| P07-BASE-01 | Phase 7 | In Progress |
-| P07-REF-01 | Phase 7 | In Progress |
+| P07-BASE-01 | Phase 7 | Complete |
+| P07-REF-01 | Phase 7 | Complete |
 | P07-COMPAT-01 | Phase 7 | In Progress |
 | P07-VERSION-01 | Phase 7 | In Progress |
 | P07-GATE-01 | Phase 7 | In Progress |

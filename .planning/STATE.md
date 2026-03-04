@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 7 - PC Agent Plugin Architecture Alignment (pending planning kickoff)
+**Current focus:** Phase 7 - PC Agent Plugin Architecture Alignment (in progress: 1/4 plans complete)
 
 ## Artifacts
 
@@ -28,7 +28,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 4 | Interaction Flow + Web UI Demo | Complete |
 | 5 | Sendback to IM | Complete |
 | 6 | Reliability + Observability Hardening | Complete |
-| 7 | PC Agent Plugin Architecture Alignment | Pending (Next Focus) |
+| 7 | PC Agent Plugin Architecture Alignment | In Progress (Plan 07-01 complete) |
 
 ## Accumulated Context
 
@@ -38,6 +38,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Phase 01.1 inserted after Phase 1: PC Agent plugin architecture alignment with `message-bridge-opencode-plugin` (URGENT)
 - Phase 01.1 execution completed with verification pass and no-drift/cutover gates closed
 - Phase 2 execution completed with bridge runtime and protocol contract verification pass
+- Phase 7 Plan 07-01 replaced tracker placeholders with explicit `P07-*` closure requirements and baseline governance artifacts
 
 ## Session Notes
 
@@ -109,14 +110,18 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Summary: `.planning/phases/06-reliability-observability-hardening/06-07-SUMMARY.md`
 - Decision: Resume decisions now emit both `chatcui.gateway.bridge.resume.outcomes` and mapped reconnect health counters directly from gateway runtime publish flow.
 - Decision: Gateway auth deny/reject paths now emit `chatcui.gateway.auth.outcomes` with canonical low-cardinality outcome and retryability tags.
-- Next pending step: Plan Phase 7 implementation breakdown.
+- Completed: Phase 7 Plan 07-01 with provisional requirement publication and alignment baseline package scaffold.
+- Summary: `.planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-01-SUMMARY.md`
+- Decision: Phase 7 requirement tracking now uses explicit provisional IDs `P07-BASE-01` through `P07-GOV-01`.
+- Decision: Baseline governance now requires reference snapshot fields (`reference_repo`, `reference_tag_or_commit`, `snapshot_date_utc`, `diff_scope`) plus `evidence_id` anchors.
+- Next pending step: Execute Phase 7 Plan 07-02.
 
 ## Session Continuity
 
-Last session: 2026-03-04 (discuss-phase workflow)
-Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-CONTEXT.md
+Last session: 2026-03-04 (execute-plan workflow)
+Stopped at: Completed 07-01-PLAN.md
+Resume file: .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-02-PLAN.md
 
 ## Next Command
 
-`$gsd-plan-phase 7`
+`$gsd-execute-phase 7`

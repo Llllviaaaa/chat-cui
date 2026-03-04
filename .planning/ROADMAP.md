@@ -175,12 +175,12 @@ Plans:
 
 ## Phase 7: PC Agent Plugin Architecture Alignment
 
-**Status:** In Progress (plan 07-01 active)
+**Status:** In Progress (1/4 plans complete)
 
 **Goal:** Close plugin+gateway architecture alignment gaps against `message-bridge-opencode-plugin` with auditable governance artifacts and release gates.
 **Requirements**: P07-BASE-01, P07-REF-01, P07-COMPAT-01, P07-VERSION-01, P07-GATE-01, P07-EVID-01, P07-GOV-01
 **Depends on:** Phase 6
-**Plans:** 4 plans
+**Plans:** 1/4 plans complete
 
 **Scope boundary (in):** `pc-agent-plugin` + gateway contract alignment and governance closure.
 **Scope boundary (out):** web-demo capability expansion, skill-service feature expansion, and mobile parity work.
@@ -193,7 +193,7 @@ Plans:
 5. Evidence and waiver governance fields are standardized for audit (`evidence_id`, owner, status, outcome, expiration).
 
 Plans:
-- [ ] 07-01-PLAN.md - publish provisional requirements and baseline governance package
+- [x] 07-01-PLAN.md - publish provisional requirements and baseline governance package
 - [ ] 07-02-PLAN.md - continue alignment closure execution and compatibility governance
 - [ ] 07-03-PLAN.md - continue hard-gate and evidence baseline implementation
 - [ ] 07-04-PLAN.md - closure verification and planning tracker synchronization
