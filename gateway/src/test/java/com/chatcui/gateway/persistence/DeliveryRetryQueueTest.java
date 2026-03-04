@@ -73,6 +73,11 @@ class DeliveryRetryQueueTest {
         assertTrue(waitUntil(() -> "failed".equals(reporter.currentStatus(event).orElse(null)), 1000));
         assertEquals(2, attempts.get());
         assertEquals(1.0, counterCount(meterRegistry, "chatcui.gateway.persistence.retry.outcomes", "gateway.persistence.retry", "failed", FailureClass.PERSISTENCE, true));
+        assertTrue(waitUntil(
+                () -> meterRegistry.find("chatcui.gateway.persistence.retry.duration")
+                        .tags("component", "gateway.persistence.retry", "outcome", "failed", "failure_class", FailureClass.PERSISTENCE.value(), "retryable", "true")
+                        .timer() != null,
+                1000));
         Timer timer = meterRegistry.find("chatcui.gateway.persistence.retry.duration")
                 .tags("component", "gateway.persistence.retry", "outcome", "failed", "failure_class", FailureClass.PERSISTENCE.value(), "retryable", "true")
                 .timer();
@@ -112,6 +117,11 @@ class DeliveryRetryQueueTest {
         assertNull(meterRegistry.find("chatcui.gateway.persistence.retry.outcomes")
                 .tags("component", "gateway.persistence.retry", "outcome", "failed", "failure_class", FailureClass.PERSISTENCE.value(), "retryable", "true")
                 .counter());
+        assertTrue(waitUntil(
+                () -> meterRegistry.find("chatcui.gateway.persistence.retry.duration")
+                        .tags("component", "gateway.persistence.retry", "outcome", "saved", "failure_class", FailureClass.PERSISTENCE.value(), "retryable", "false")
+                        .timer() != null,
+                1000));
         Timer timer = meterRegistry.find("chatcui.gateway.persistence.retry.duration")
                 .tags("component", "gateway.persistence.retry", "outcome", "saved", "failure_class", FailureClass.PERSISTENCE.value(), "retryable", "false")
                 .timer();
