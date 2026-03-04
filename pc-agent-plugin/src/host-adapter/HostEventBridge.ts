@@ -30,7 +30,7 @@ export class HostEventBridge {
         runtime.receiveGateway(event.payload.topic, event.payload.data);
         return;
       case "runtime.reconnect":
-        runtime.onReconnect();
+        runtime.onReconnect(event.payload);
         return;
       case "runtime.health":
         runtime.reportHealth(event.payload.health, event.payload.detail);

@@ -107,5 +107,7 @@ describe("CliRealChain integration", () => {
     expect(result.markers).toContain("real_chain_session_started");
     expect(result.markers).toContain("auth_v1_signature_generated");
     expect(logs.info.join(" ")).toContain("Real chain session started.");
+    expect(logs.info.join(" ")).toContain("[plugin-event] runtime.health");
+    expect(logs.info.join(" ")).not.toContain("[plugin-event] runtime.failed");
   });
 });
