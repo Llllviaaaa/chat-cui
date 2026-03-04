@@ -69,8 +69,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Acceptance evidence: `.planning/phases/04-interaction-flow-web-ui-demo/04-ACCEPTANCE-EVIDENCE.md`
 - Decision: Slash trigger remains first-character gated (`/`) to avoid accidental skill invocation.
 - Decision: Keep one-running-session UX guard with overlay/card state convergence by session history polling.
-- Next pending step: Start Phase 5 context discussion
+- Completed: Phase 5 context discussion and decision capture for sendback-to-IM flow
+- Context file: `.planning/phases/05-sendback-to-im/05-CONTEXT.md`
+- Decision: Sendback supports full-block or partial assistant-text selection, but single selection per send action.
+- Decision: Sendback requires preview-confirm with light edit and retains latest failed draft for one-click retry.
+- Next pending step: Create Phase 5 execution plans
 
 ## Next Command
 
-`$gsd-discuss-phase 5`
+`$gsd-plan-phase 5`
