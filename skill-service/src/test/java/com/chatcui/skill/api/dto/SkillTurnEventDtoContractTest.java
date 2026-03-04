@@ -49,6 +49,7 @@ class SkillTurnEventDtoContractTest {
         SessionHistoryResponse.HistoryItem item = new SessionHistoryResponse.HistoryItem(
                 "turn-a",
                 1L,
+                "trace-a",
                 "assistant",
                 "hello",
                 "completed",
@@ -57,6 +58,8 @@ class SkillTurnEventDtoContractTest {
         );
         SessionHistoryResponse response = new SessionHistoryResponse(
                 "session-a",
+                null,
+                false,
                 List.of(item)
         );
 
@@ -71,6 +74,8 @@ class SkillTurnEventDtoContractTest {
 
         assertTrue(first.containsKey("turn_status"));
         assertTrue(first.containsKey("delivery_status"));
+        assertTrue(first.containsKey("trace_id"));
+        assertTrue(first.containsKey("snapshot"));
     }
 
     @Test
