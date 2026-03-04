@@ -77,8 +77,12 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Decision: Failure flow preserves latest draft and supports one-click retry with deterministic error codes.
 - Completed: Phase 6 context discussion with decisions captured for reconnect policy, resume/dedup semantics, and observability baseline
 - Context file: `.planning/phases/06-reliability-observability-hardening/06-CONTEXT.md`
-- Next pending step: Plan Phase 6 execution breakdown
+- Completed: Phase 6 Plan 06-01 with plugin reconnect coordinator, resume-anchor contracts, and sequence anomaly compensation policy
+- Summary: `.planning/phases/06-reliability-observability-hardening/06-01-SUMMARY.md`
+- Decision: Reconnect terminal failures now expose deterministic `reason_code + retryable + next_action` envelope via `runtime.failed`.
+- Decision: Sequence gap handling now emits compensation signals and gates continuation until contiguous `seq` recovery.
+- Next pending step: Execute Phase 6 Plan 06-02.
 
 ## Next Command
 
-`$gsd-plan-phase 6`
+`$gsd-execute-phase 6`

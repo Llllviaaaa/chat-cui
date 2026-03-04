@@ -23,7 +23,7 @@
 - [x] **BRG-01**: Client runtime can load and initialize a PC Agent plugin compatible with `message-bridge-opencode-plugin` behavior.
 - [x] **BRG-02**: Plugin can establish and keep a long-lived connection with AI-Gateway for one skill session.
 - [x] **BRG-03**: Plugin translates messages bidirectionally between OpenCode protocol and internal protocol.
-- [ ] **BRG-04**: Plugin and gateway can recover from transient disconnects and resume session continuity.
+- [x] **BRG-04**: Plugin and gateway can recover from transient disconnects and resume session continuity.
 
 ### Authentication and Security
 
@@ -96,7 +96,7 @@
 | BRG-01 | Phase 2 | Complete |
 | BRG-02 | Phase 2 | Complete |
 | BRG-03 | Phase 2 | Complete |
-| BRG-04 | Phase 6 | Pending |
+| BRG-04 | Phase 6 | Complete |
 | AUT-01 | Phase 1 | Complete |
 | AUT-02 | Phase 1 | Complete |
 | AUT-03 | Phase 1 | Complete |

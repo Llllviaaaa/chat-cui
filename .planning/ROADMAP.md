@@ -150,13 +150,13 @@ Plans:
 
 ## Phase 6: Reliability + Observability Hardening
 
-**Status:** Planned
+**Status:** In Progress
 
 **Goal:** Increase integration reliability and troubleshooting clarity for team rollout.
 
 **Requirements:** BRG-04, DEM-02
 
-**Plans:** 6 plans
+**Plans:** 1/6 plans executed
 
 **Success Criteria:**
 1. Connection interruption scenarios can auto-recover or fail fast with clear retry semantics.
@@ -165,12 +165,12 @@ Plans:
 4. Core flow dashboard/metrics can diagnose at least auth failure, bridge failure, and sendback failure classes.
 
 Plans:
-- [ ] 06-01-PLAN.md - plugin reconnect coordinator with bounded retry, fresh auth, and resume anomaly handling
-- [ ] 06-02-PLAN.md - gateway resume-anchor coordinator with duplicate drop and gap compensation gating
-- [ ] 06-03-PLAN.md - skill-service sendback idempotency key enforcement and duplicate-safe response behavior
-- [ ] 06-04-PLAN.md - cross-service structured logging contract with shared taxonomy and deterministic failure envelope
-- [ ] 06-05-PLAN.md - low-cardinality gateway/skill metrics wiring and observability baseline runbook
-- [ ] 06-06-PLAN.md - phase verification evidence and tracker synchronization closure
+  - [x] 06-01-PLAN.md - plugin reconnect coordinator with bounded retry, fresh auth, and resume anomaly handling
+  - [ ] 06-02-PLAN.md - gateway resume-anchor coordinator with duplicate drop and gap compensation gating
+  - [ ] 06-03-PLAN.md - skill-service sendback idempotency key enforcement and duplicate-safe response behavior
+  - [ ] 06-04-PLAN.md - cross-service structured logging contract with shared taxonomy and deterministic failure envelope
+  - [ ] 06-05-PLAN.md - low-cardinality gateway/skill metrics wiring and observability baseline runbook
+  - [ ] 06-06-PLAN.md - phase verification evidence and tracker synchronization closure
 
 ## Phase 7: PC Agent Plugin Architecture Alignment
 
@@ -187,5 +187,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing and verifying Phase 5*
+*Last updated: 2026-03-04 after executing Phase 6 Plan 06-01*
 
