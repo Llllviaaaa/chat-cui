@@ -12,13 +12,13 @@
 
 | Requirement | Alignment Item | status | owner | evidence_id | evidence_link | waiver_reference | Notes |
 |-------------|----------------|--------|-------|-------------|---------------|------------------|-------|
-| `P07-BASE-01` | Baseline package files are published and cross-linked | CLOSED | phase-07-owner | P07-BASE-01-20260304 | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-01-SUMMARY.md | none | Completed in plan 07-01 with mapping/checklist/runbook artifacts |
-| `P07-REF-01` | Reference snapshot protocol for `message-bridge-opencode-plugin` is defined | CLOSED | phase-07-owner | P07-REF-01-20260304 | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-ALIGNMENT-RUNBOOK.md#reference-baseline-snapshot-method-p07-ref-01 | none | Schema and required fields published; future plans populate concrete snapshot values |
-| `P07-COMPAT-01` | Additive compatibility policy is enforced by verification evidence | OPEN | phase-07-owner | P07-COMPAT-01-PENDING | pending://phase-07/P07-COMPAT-01 | none | No contract-breaking removals permitted |
-| `P07-VERSION-01` | Contract version signal coverage is documented for key events | OPEN | phase-07-owner | P07-VERSION-01-PENDING | pending://phase-07/P07-VERSION-01 | none | Key event inventory and version assertions required |
-| `P07-GATE-01` | Full hard-gate command set is executable and release-blocking | OPEN | phase-07-owner | P07-GATE-01-PENDING | pending://phase-07/P07-GATE-01 | none | Must cover plugin no-drift, host integration, CLI real-chain, gateway auth/resume |
-| `P07-EVID-01` | Evidence schema captures all required audit fields | OPEN | phase-07-owner | P07-EVID-01-PENDING | pending://phase-07/P07-EVID-01 | none | Required fields: command/date/result/session_id/trace_id/evidence_id |
-| `P07-GOV-01` | Waiver and deprecation governance workflow is documented | OPEN | phase-07-owner | P07-GOV-01-PENDING | pending://phase-07/P07-GOV-01 | none | Temporary waivers require owner + expiration + closeout action |
+| `P07-BASE-01` | Baseline package files are published and cross-linked | CLOSED | phase-07-owner | EVID-P07-BASE-01-BASELINE | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-01-SUMMARY.md | none | Completed in plan 07-01 with mapping/checklist/runbook artifacts |
+| `P07-REF-01` | Reference snapshot protocol for `message-bridge-opencode-plugin` is defined | CLOSED | phase-07-owner | EVID-P07-REF-01-BASELINE | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-ACCEPTANCE-EVIDENCE.md | none | Baseline proof fields captured with citation chain into verification report |
+| `P07-COMPAT-01` | Additive compatibility policy is enforced by verification evidence | CLOSED | phase-07-owner | EVID-P07-COMPAT-01-REGRESSION | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-02-SUMMARY.md | none | No contract-breaking removals; gateway regression suites green |
+| `P07-VERSION-01` | Contract version signal coverage is documented for key events | CLOSED | phase-07-owner | EVID-P07-VERSION-01-HOST | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-02-SUMMARY.md | none | Host-facing key runtime/gateway events include `contract_version` |
+| `P07-GATE-01` | Full hard-gate command set is executable and release-blocking | CLOSED | phase-07-owner | EVID-P07-GATE-01-HARDGATE | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-ACCEPTANCE-EVIDENCE.md | none | `verify:phase-07` passed locally and is enforced in CI |
+| `P07-EVID-01` | Evidence schema captures all required audit fields | CLOSED | phase-07-owner | EVID-P07-EVID-01-SCHEMA | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-ACCEPTANCE-EVIDENCE.md | none | Evidence includes command/date/result/session_id/trace_id/evidence_id |
+| `P07-GOV-01` | Waiver and deprecation governance workflow is documented | CLOSED | phase-07-owner | EVID-P07-GOV-01-WAIVER | .planning/phases/07-pc-agent-message-bridge-opencode-plugin/07-WAIVER-TEMPLATE.md | none | Waiver policy enforces owner+approver+expiration and two-release deprecation window |
 
 ## Update Procedure
 
