@@ -1,10 +1,68 @@
 export type RuntimeHealth = "healthy" | "degraded" | "down";
 
+export interface ResumeAnchor {
+  session_id: string;
+  turn_id: string;
+  seq: number;
+}
+
+export interface ReconnectFreshAuthMaterial {
+  ak: string;
+  tenant_id: string;
+  client_id: string;
+  session_id: string;
+  timestamp: number;
+  nonce: string;
+  signature: string;
+}
+
+export const RECONNECT_FAILURE_REASON_CODES = [
+  "AUTH_REFRESH_FAILED",
+  "TRANSPORT_RECONNECT_FAILED",
+  "RESUME_ANCHOR_REJECTED",
+  "RETRY_BUDGET_EXHAUSTED",
+  "SESSION_TERMINATED"
+] as const;
+
+export type ReconnectFailureReasonCode =
+  (typeof RECONNECT_FAILURE_REASON_CODES)[number];
+
+export const RECONNECT_NEXT_ACTIONS = [
+  "retry_automatically",
+  "reauthenticate_and_retry",
+  "restart_session",
+  "contact_support"
+] as const;
+
+export type ReconnectNextAction = (typeof RECONNECT_NEXT_ACTIONS)[number];
+
+export interface RuntimeReconnectingPayload {
+  attempt: number;
+  reason?: string;
+  resume_anchor?: ResumeAnchor;
+  fresh_auth?: ReconnectFreshAuthMaterial;
+}
+
+export interface RuntimeResumedPayload {
+  attempt: number;
+  resume_anchor: ResumeAnchor;
+}
+
+export interface RuntimeFailedPayload {
+  attempt: number;
+  reason_code: ReconnectFailureReasonCode;
+  retryable: boolean;
+  next_action: ReconnectNextAction;
+  detail?: string;
+}
+
 export type PluginEventName =
   | "runtime.started"
   | "runtime.stopped"
   | "runtime.disposed"
   | "runtime.reconnecting"
+  | "runtime.resumed"
+  | "runtime.failed"
   | "runtime.health"
   | "runtime.error"
   | "gateway.outbound"
@@ -14,7 +72,9 @@ export interface PluginEventPayloadMap {
   "runtime.started": { state: string };
   "runtime.stopped": { state: string };
   "runtime.disposed": { state: string };
-  "runtime.reconnecting": { attempt: number };
+  "runtime.reconnecting": RuntimeReconnectingPayload;
+  "runtime.resumed": RuntimeResumedPayload;
+  "runtime.failed": RuntimeFailedPayload;
   "runtime.health": { health: RuntimeHealth; detail?: string };
   "runtime.error": { code: string; message: string };
   "gateway.outbound": { topic: string; data: Record<string, unknown> };

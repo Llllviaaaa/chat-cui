@@ -1,9 +1,19 @@
 import type { OpenCodeMessage } from "../../core/bridge/ProtocolBridge";
-import type { RuntimeHealth } from "../../core/events/PluginEvents";
+import type {
+  ReconnectFreshAuthMaterial,
+  ResumeAnchor,
+  RuntimeHealth
+} from "../../core/events/PluginEvents";
 
 export interface HostOutboundEvent {
   type: string;
   payload: Record<string, unknown>;
+}
+
+export interface HostReconnectPayload {
+  reason?: string;
+  resume_anchor?: ResumeAnchor;
+  fresh_auth?: ReconnectFreshAuthMaterial;
 }
 
 export type HostInboundEvent =
@@ -33,9 +43,7 @@ export type HostInboundEvent =
     }
   | {
       type: "runtime.reconnect";
-      payload?: {
-        reason?: string;
-      };
+      payload?: HostReconnectPayload;
     }
   | {
       type: "runtime.health";

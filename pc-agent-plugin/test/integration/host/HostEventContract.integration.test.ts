@@ -5,6 +5,10 @@ import {
   GATEWAY_TOPICS,
   OPCODE_TYPES
 } from "../../../src/core/bridge/ProtocolBridge";
+import {
+  RECONNECT_FAILURE_REASON_CODES,
+  RECONNECT_NEXT_ACTIONS
+} from "../../../src/core/events/PluginEvents";
 import type { HostOutboundEvent } from "../../../src/host-adapter/contracts/HostPluginContract";
 
 function setupAdapter() {
@@ -18,6 +22,22 @@ function setupAdapter() {
 }
 
 describe("HostEventContract integration", () => {
+  it("defines reconnect failure reason codes and next actions deterministically", () => {
+    expect(RECONNECT_FAILURE_REASON_CODES).toEqual([
+      "AUTH_REFRESH_FAILED",
+      "TRANSPORT_RECONNECT_FAILED",
+      "RESUME_ANCHOR_REJECTED",
+      "RETRY_BUDGET_EXHAUSTED",
+      "SESSION_TERMINATED"
+    ]);
+    expect(RECONNECT_NEXT_ACTIONS).toEqual([
+      "retry_automatically",
+      "reauthenticate_and_retry",
+      "restart_session",
+      "contact_support"
+    ]);
+  });
+
   it("maps host opencode event to gateway outbound plugin event", () => {
     const { adapter, events } = setupAdapter();
     adapter.onHostEvent({
@@ -98,5 +118,41 @@ describe("HostEventContract integration", () => {
     expect(runtimeError).toBeDefined();
     expect(runtimeError?.payload.code).toBe("HOST_EVENT_UNSUPPORTED");
     expect(runtimeError?.payload.message).toContain("unknown.host.event");
+  });
+
+  it("keeps runtime.reconnect backward compatible with typed resume payload", () => {
+    const { adapter, events } = setupAdapter();
+
+    adapter.onHostEvent({
+      type: "runtime.reconnect"
+    });
+    adapter.onHostEvent({
+      type: "runtime.reconnect",
+      payload: {
+        reason: "gateway_disconnected",
+        resume_anchor: {
+          session_id: "session-1",
+          turn_id: "turn-9",
+          seq: 42
+        },
+        fresh_auth: {
+          ak: "ak_live_1234",
+          tenant_id: "tenant-a",
+          client_id: "client-a",
+          session_id: "session-1",
+          timestamp: 1_762_000_000,
+          nonce: "nonce-1",
+          signature: "sig-1"
+        }
+      }
+    });
+
+    const reconnecting = events.filter((event) => event.type === "runtime.reconnecting");
+    expect(reconnecting).toHaveLength(2);
+    expect(reconnecting[0]?.payload.attempt).toBe(1);
+    expect(reconnecting[1]?.payload.attempt).toBe(2);
+
+    const runtimeError = events.find((event) => event.type === "runtime.error");
+    expect(runtimeError).toBeUndefined();
   });
 });
