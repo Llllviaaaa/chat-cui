@@ -16,7 +16,7 @@
 - [x] **SKL-01**: User sees a one-line running status card in chat after generation starts.
 - [x] **SKL-02**: User can click expand on the status card to open Skill client view over the chat area.
 - [x] **SKL-03**: User can continue multi-turn conversation with OpenCode in the Skill client.
-- [ ] **SKL-04**: User can select one returned text block as sendback candidate to IM.
+- [x] **SKL-04**: User can select one returned text block as sendback candidate to IM.
 
 ### Bridge and Connectivity
 
@@ -36,13 +36,13 @@
 - [x] **SVC-01**: AI-Gateway transparently forwards OpenCode streaming/output events to Skill service.
 - [x] **SVC-02**: Skill service persists full conversation history with session and actor metadata.
 - [x] **SVC-03**: Skill client can query persisted session history from Skill service APIs.
-- [ ] **SVC-04**: Skill service exposes API to send selected text to IM as a chat message request.
+- [x] **SVC-04**: Skill service exposes API to send selected text to IM as a chat message request.
 
 ### IM Sendback
 
-- [ ] **IMS-01**: Selected Skill text can be sent to current IM conversation as user-visible chat message.
-- [ ] **IMS-02**: Sendback request stores correlation between IM message and originating skill session.
-- [ ] **IMS-03**: Sendback failures are returned with actionable error codes/messages to Skill client.
+- [x] **IMS-01**: Selected Skill text can be sent to current IM conversation as user-visible chat message.
+- [x] **IMS-02**: Sendback request stores correlation between IM message and originating skill session.
+- [x] **IMS-03**: Sendback failures are returned with actionable error codes/messages to Skill client.
 
 ### Demo and Operations
 
@@ -92,7 +92,7 @@
 | SKL-01 | Phase 4 | Complete |
 | SKL-02 | Phase 4 | Complete |
 | SKL-03 | Phase 4 | Complete |
-| SKL-04 | Phase 5 | Pending |
+| SKL-04 | Phase 5 | Complete |
 | BRG-01 | Phase 2 | Complete |
 | BRG-02 | Phase 2 | Complete |
 | BRG-03 | Phase 2 | Complete |
@@ -103,10 +103,10 @@
 | SVC-01 | Phase 3 | Complete |
 | SVC-02 | Phase 3 | Complete |
 | SVC-03 | Phase 3 | Complete |
-| SVC-04 | Phase 5 | Pending |
-| IMS-01 | Phase 5 | Pending |
-| IMS-02 | Phase 5 | Pending |
-| IMS-03 | Phase 5 | Pending |
+| SVC-04 | Phase 5 | Complete |
+| IMS-01 | Phase 5 | Complete |
+| IMS-02 | Phase 5 | Complete |
+| IMS-03 | Phase 5 | Complete |
 | DEM-01 | Phase 4 | Complete |
 | DEM-02 | Phase 6 | Pending |
 | P01.1-ARCH-01 | Phase 01.1 | Complete |
@@ -125,4 +125,4 @@
 
 ---
 *Requirements defined: 2026-03-03*  
-*Last updated: 2026-03-04 after Phase 4 execution and verification pass*
+*Last updated: 2026-03-04 after Phase 5 execution and verification pass*

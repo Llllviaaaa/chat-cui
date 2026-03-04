@@ -8,7 +8,7 @@
 See: `.planning/PROJECT.md` (updated 2026-03-03)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 5 - Sendback to IM
+**Current focus:** Phase 6 - Reliability + Observability Hardening
 
 ## Artifacts
 
@@ -26,7 +26,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 | 2 | PC Agent Bridge Core | Complete |
 | 3 | Skill Service Persistence APIs | Complete |
 | 4 | Interaction Flow + Web UI Demo | Complete |
-| 5 | Sendback to IM | Pending |
+| 5 | Sendback to IM | Complete |
 | 6 | Reliability + Observability Hardening | Pending |
 | 7 | PC Agent Plugin Architecture Alignment | Pending |
 
@@ -69,12 +69,14 @@ See: `.planning/PROJECT.md` (updated 2026-03-03)
 - Acceptance evidence: `.planning/phases/04-interaction-flow-web-ui-demo/04-ACCEPTANCE-EVIDENCE.md`
 - Decision: Slash trigger remains first-character gated (`/`) to avoid accidental skill invocation.
 - Decision: Keep one-running-session UX guard with overlay/card state convergence by session history polling.
-- Completed: Phase 5 context discussion and decision capture for sendback-to-IM flow
-- Context file: `.planning/phases/05-sendback-to-im/05-CONTEXT.md`
-- Decision: Sendback supports full-block or partial assistant-text selection, but single selection per send action.
-- Decision: Sendback requires preview-confirm with light edit and retains latest failed draft for one-click retry.
-- Next pending step: Create Phase 5 execution plans
+- Completed: Phase 5 plans 05-01..05-04 with sendback API, correlation persistence, and web retry UX
+- Summaries: `.planning/phases/05-sendback-to-im/05-01-SUMMARY.md`, `.planning/phases/05-sendback-to-im/05-02-SUMMARY.md`, `.planning/phases/05-sendback-to-im/05-03-SUMMARY.md`, `.planning/phases/05-sendback-to-im/05-04-SUMMARY.md`
+- Verification report: `.planning/phases/05-sendback-to-im/05-VERIFICATION.md`
+- Acceptance evidence: `.planning/phases/05-sendback-to-im/05-ACCEPTANCE-EVIDENCE.md`
+- Decision: Sendback enforces assistant-only source validation and single-segment submit.
+- Decision: Failure flow preserves latest draft and supports one-click retry with deterministic error codes.
+- Next pending step: Start Phase 6 context discussion
 
 ## Next Command
 
-`$gsd-plan-phase 5`
+`$gsd-discuss-phase 6`

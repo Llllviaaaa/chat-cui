@@ -11,7 +11,7 @@
 - v1 requirements: 23
 - Mapped requirements: 23
 - Unmapped requirements: 0
-- Completed phases: 5 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04, Phase 4 verified on 2026-03-04)
+- Completed phases: 6 (Phase 1 verified on 2026-03-03, Phase 01.1 verified on 2026-03-04, Phase 2 verified on 2026-03-04, Phase 3 verified on 2026-03-04, Phase 4 verified on 2026-03-04, Phase 5 verified on 2026-03-04)
 
 ## Phase Overview
 
@@ -128,9 +128,12 @@ Plans:
 
 ## Phase 5: Sendback to IM
 
+**Status:** Complete (verified 2026-03-04)
+
 **Goal:** Close the human-in-the-loop loop by sending selected AI output back to IM chat.
 
 **Requirements:** SKL-04, SVC-04, IMS-01, IMS-02, IMS-03
+**Plans:** 4/4 plans complete
 
 **Success Criteria:**
 1. User can select one AI response segment and stage it as sendback content.
@@ -138,6 +141,12 @@ Plans:
 3. Successful sendback appears in IM chat timeline as normal user-visible message.
 4. Correlation id links IM message and originating skill session for audit/debug.
 5. Sendback failures are surfaced to Skill UI with actionable error details.
+
+Plans:
+- [x] 05-01-PLAN.md - sendback correlation persistence migration and mapper baseline
+- [x] 05-02-PLAN.md - sendback API/service orchestration with deterministic errors
+- [x] 05-03-PLAN.md - web-demo selection, preview-confirm, and retry UX
+- [x] 05-04-PLAN.md - acceptance evidence, verification, and tracking closure
 
 ## Phase 6: Reliability + Observability Hardening
 
@@ -166,5 +175,5 @@ Plans:
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
 ---
-*Last updated: 2026-03-04 after executing and verifying Phase 4*
+*Last updated: 2026-03-04 after executing and verifying Phase 5*
 
