@@ -1,6 +1,8 @@
 package com.chatcui.skill.service;
 
 import com.chatcui.skill.api.dto.SendbackResponse;
+import com.chatcui.skill.observability.FailureClass;
+import com.chatcui.skill.observability.SkillMetricsRecorder;
 import com.chatcui.skill.persistence.mapper.SendbackRecordMapper;
 import com.chatcui.skill.persistence.mapper.TurnRecordMapper;
 import com.chatcui.skill.persistence.model.SendbackRecord;
@@ -22,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,6 +40,9 @@ class SendbackServiceTest {
 
     @Mock
     private ImMessageGateway imMessageGateway;
+
+    @Mock
+    private SkillMetricsRecorder skillMetricsRecorder;
 
     private SendbackService service;
 
@@ -176,6 +182,71 @@ class SendbackServiceTest {
 
         verify(imMessageGateway, never()).send(any());
         verify(sendbackRecordMapper, never()).insert(any(SendbackRecord.class));
+    }
+
+    @Test
+    void successfulSendbackEmitsSuccessMetric() {
+        SendbackService instrumented = new SendbackService(
+                turnRecordMapper,
+                sendbackRecordMapper,
+                imMessageGateway,
+                java.time.Clock.systemUTC(),
+                skillMetricsRecorder);
+        SendbackService.SendCommand command = command("answer");
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(imMessageGateway.send(any()))
+                .thenReturn(new ImMessageGateway.ImSendResult("im-msg-1", Instant.parse("2026-03-04T00:00:00Z")));
+
+        instrumented.send(command);
+
+        verify(skillMetricsRecorder).recordSendbackOutcome(eq("success"), eq(FailureClass.SENDBACK), eq(false), anyLong());
+    }
+
+    @Test
+    void failedSendbackEmitsFailureMetric() {
+        SendbackService instrumented = new SendbackService(
+                turnRecordMapper,
+                sendbackRecordMapper,
+                imMessageGateway,
+                java.time.Clock.systemUTC(),
+                skillMetricsRecorder);
+        SendbackService.SendCommand command = command("answer");
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(imMessageGateway.send(any()))
+                .thenThrow(new ImMessageGateway.ImSendException("IM_CHANNEL_UNAVAILABLE", "IM channel is unavailable. Please retry."));
+
+        assertThrows(SendbackService.SendbackFailedException.class, () -> instrumented.send(command));
+
+        verify(skillMetricsRecorder).recordSendbackOutcome(
+                eq("failure"),
+                eq(FailureClass.SENDBACK),
+                eq(FailureClass.SENDBACK.retryableDefault()),
+                anyLong());
+    }
+
+    @Test
+    void duplicateSendbackReplayEmitsDedupMetric() {
+        SendbackService instrumented = new SendbackService(
+                turnRecordMapper,
+                sendbackRecordMapper,
+                imMessageGateway,
+                java.time.Clock.systemUTC(),
+                skillMetricsRecorder);
+        SendbackService.SendCommand command = command("answer");
+        when(turnRecordMapper.existsTurnInSession("tenant-1", "client-1", "session-1", "turn-1")).thenReturn(true);
+        when(turnRecordMapper.findLatestBySessionTurn("session-1", "turn-1"))
+                .thenReturn(Optional.of(turn("Final answer for team", "assistant")));
+        when(sendbackRecordMapper.findByIdempotencyKey(anyString()))
+                .thenReturn(Optional.of(existingRecord("request-existing", "sent", "im-msg-existing", null, null)));
+
+        instrumented.send(command);
+
+        verify(skillMetricsRecorder).recordSendbackOutcome(eq("dedup"), eq(FailureClass.SENDBACK), eq(false), anyLong());
+        verify(imMessageGateway, never()).send(any());
     }
 
     private SendbackService.SendCommand command(String selectedText) {
