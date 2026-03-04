@@ -6,15 +6,19 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 
 class BridgePersistencePublisherTest {
+    private final ObjectMapper objectMapper = new ObjectMapper();
+
 
     @Test
     void persistenceTopicsAreForwarded() {
@@ -74,18 +78,82 @@ class BridgePersistencePublisherTest {
         assertTrue(waitUntil(() -> forwarded.get() == 1, 1000));
     }
 
-    private SkillTurnForwardEvent sampleEvent(String topic, long seq) {
+    @Test
+    void gapEventsTriggerCompensationAndBlockOutOfOrderTuple() throws Exception {
+        List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> {
+                    persisted.add(fromPayload(payload));
+                    latch.countDown();
+                },
+                (event, error) -> {
+                },
+                Runnable::run);
+        BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, new DeliveryStatusReporter());
+
+        SkillTurnForwardEvent first = sampleEvent("skill.turn.delta", 1L, "client-a");
+        SkillTurnForwardEvent gap = sampleEvent("skill.turn.delta", 3L, "client-a");
+        publisher.publish(first.topic(), first);
+        publisher.publish(gap.topic(), gap);
+
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(List.of(1L, 2L), persisted.stream().map(SkillTurnForwardEvent::seq).toList());
+        assertEquals(List.of("delta", "compensate"), persisted.stream().map(SkillTurnForwardEvent::eventType).toList());
+        SkillTurnForwardEvent compensation = persisted.get(1);
+        assertEquals("skill.turn.compensate", compensation.topic());
+        assertEquals("SEQ_GAP_COMPENSATION_REQUIRED", compensation.reasonCode());
+        assertEquals("compensate_and_resume", compensation.nextAction());
+    }
+
+    @Test
+    void ownerConflictEmitsDeterministicTerminalFailureEnvelope() throws Exception {
+        List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
+        CountDownLatch latch = new CountDownLatch(2);
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> {
+                    persisted.add(fromPayload(payload));
+                    latch.countDown();
+                },
+                (event, error) -> {
+                },
+                Runnable::run);
+        BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, new DeliveryStatusReporter());
+
+        SkillTurnForwardEvent ownerA = sampleEvent("skill.turn.delta", 1L, "client-a");
+        SkillTurnForwardEvent ownerB = sampleEvent("skill.turn.delta", 2L, "client-b");
+        publisher.publish(ownerA.topic(), ownerA);
+        publisher.publish(ownerB.topic(), ownerB);
+
+        assertTrue(latch.await(1, TimeUnit.SECONDS));
+        assertEquals(List.of("delta", "error"), persisted.stream().map(SkillTurnForwardEvent::eventType).toList());
+        SkillTurnForwardEvent terminal = persisted.get(1);
+        assertEquals("skill.turn.error", terminal.topic());
+        assertEquals("RESUME_OWNER_CONFLICT", terminal.reasonCode());
+        assertEquals("restart_session", terminal.nextAction());
+    }
+
+    private SkillTurnForwardEvent sampleEvent(String topic, long seq, String clientId) {
         return new SkillTurnForwardEvent(
                 "tenant-a",
-                "client-a",
+                clientId,
                 "session-a",
-                "turn-" + seq,
+                "turn-shared",
                 seq,
                 "trace-a",
                 "assistant",
                 "delta",
                 "payload-" + seq,
                 topic);
+    }
+
+    private SkillTurnForwardEvent sampleEvent(String topic, long seq) {
+        return sampleEvent(topic, seq, "client-a");
+    }
+
+    private SkillTurnForwardEvent fromPayload(byte[] payload) throws Exception {
+        return objectMapper.readValue(payload, new TypeReference<>() {
+        });
     }
 
     private boolean waitUntil(Check check, long timeoutMs) throws InterruptedException {

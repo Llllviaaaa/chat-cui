@@ -65,6 +65,46 @@ class SkillPersistenceForwardingIntegrationTest {
         }
     }
 
+    @Test
+    void gapCompensationIsPersistedAndOutOfOrderTupleIsBlocked() throws Exception {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try {
+            DeliveryStatusReporter reporter = new DeliveryStatusReporter();
+            List<SkillTurnForwardEvent> persisted = new CopyOnWriteArrayList<>();
+            DeliveryRetryQueue retryQueue = new DeliveryRetryQueue(
+                    scheduler,
+                    2,
+                    Duration.ofMillis(5),
+                    persisted::add,
+                    reporter
+            );
+            SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                    payload -> {
+                        throw new IllegalStateException("skill service unavailable");
+                    },
+                    retryQueue,
+                    executor
+            );
+            BridgePersistencePublisher publisher = new BridgePersistencePublisher(forwarder, reporter);
+
+            SkillTurnForwardEvent first = event("turn-shared-gap", 1L, "delta", "draft");
+            SkillTurnForwardEvent gap = event("turn-shared-gap", 3L, "delta", "late-delta");
+            publisher.publish(first.topic(), first);
+            publisher.publish(gap.topic(), gap);
+
+            assertTrue(waitUntil(() -> persisted.size() == 2, 1500));
+            assertEquals(List.of(1L, 2L), persisted.stream().map(SkillTurnForwardEvent::seq).toList());
+            assertEquals(List.of("delta", "compensate"), persisted.stream().map(SkillTurnForwardEvent::eventType).toList());
+            SkillTurnForwardEvent compensate = persisted.get(1);
+            assertEquals("SEQ_GAP_COMPENSATION_REQUIRED", compensate.reasonCode());
+            assertEquals("compensate_and_resume", compensate.nextAction());
+        } finally {
+            executor.shutdownNow();
+            scheduler.shutdownNow();
+        }
+    }
+
     private SkillTurnForwardEvent event(String turnId, long seq, String eventType, String payload) {
         return new SkillTurnForwardEvent(
                 "tenant-shared",
