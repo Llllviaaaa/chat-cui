@@ -11,11 +11,12 @@ Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise mess
 
 ## Current State
 
-- `v1.0 MVP` shipped on 2026-03-04 with 8 phases and 38 completed plans.
+- `v1.0 MVP` shipped on 2026-03-04 with 9 phases and 42 completed plans.
 - Milestone artifacts archived under `.planning/milestones/`:
   - `v1.0-ROADMAP.md`
   - `v1.0-REQUIREMENTS.md`
   - `v1.0-MILESTONE-AUDIT.md`
+- Phase 8 distributed precise-delivery closure is completed with requirement-level verification evidence (`P08-ROUTE-01..P08-OBS-01` all PASS).
 - Active planning is between milestones; next step is to define `v1.1` goals and roadmap.
 
 ## Requirements Status
@@ -28,6 +29,7 @@ Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise mess
 - Yes User-driven sendback to IM is supported with correlation tracking and actionable errors (`SKL-04`, `SVC-04`, `IMS-01..03`).
 - Yes Reliability and observability baseline is closed with reconnect/resume/idempotency and cross-service metrics/log traceability (`BRG-04`, `DEM-02`).
 - Yes Plugin architecture alignment governance is in place, including additive contract versioning and hard release gate (`P01.1-*`, `P07-*`).
+- Yes Distributed multi-instance precise delivery is closed with Redis route truth, owner fence, owner-first relay, two-stage ACK, bounded recovery, and telemetry evidence (`P08-*`).
 
 ### Next Milestone Candidates
 
@@ -50,6 +52,7 @@ Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise mess
   - `gateway` auth/resume/persistence forwarding and observability contracts
   - `skill-service` persistence and IM sendback APIs
   - `web-demo` end-to-end interaction and sendback UX flow
+  - distributed `gateway + skill-service` precise-delivery path (`route_version`, `OWNER_FENCED`, replay-window semantics)
 - Release governance now requires `npm.cmd --prefix pc-agent-plugin run verify:phase-07` and CI alignment gate pass for plugin alignment claims.
 
 ## Constraints
@@ -69,6 +72,7 @@ Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise mess
 | Keep IM sendback as server API call from Skill flow | Preserve IM source-of-truth and auditability | Validated in v1.0 (`IMS-01..03`) |
 | Persist full Skill chat records in skill service | Required for continuity, replay, and troubleshooting | Validated in v1.0 (`SVC-01..03`) |
 | Use release-block governance for plugin alignment claims | Prevent architecture drift and unverifiable compatibility statements | Adopted in v1.0 Phase 7 (`verify:phase-07` + CI gate) |
+| Use Redis route truth + owner fence + two-stage ack for distributed precise delivery | Multi-instance topology needs deterministic ownership, ordering, and failure semantics | Validated in v1.0 Phase 8 (`P08-*`) |
 
 ## Next Milestone Goals
 
@@ -77,4 +81,4 @@ Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise mess
 3. Preserve v1.0 compatibility and observability guarantees while scaling rollout confidence.
 
 ---
-*Last updated: 2026-03-04 after v1.0 milestone completion*
+*Last updated: 2026-03-04 after v1.0 milestone re-archive with Phase 8 closure*

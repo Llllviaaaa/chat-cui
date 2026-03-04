@@ -5,13 +5,14 @@
 ## Milestone: v1.0 - MVP
 
 **Shipped:** 2026-03-04  
-**Phases:** 8 | **Plans:** 38 | **Sessions:** 1
+**Phases:** 9 | **Plans:** 42 | **Sessions:** 1
 
 ### What Was Built
 
 - Delivered authenticated plugin-to-gateway runtime with deterministic AUTH_V1 contracts.
 - Delivered skill-service persistence/history and IM sendback APIs with web demo interaction loop.
 - Added reliability/observability hardening and architecture alignment governance with hard release gates.
+- Closed distributed multi-instance precise delivery with Redis route truth, owner fencing, owner-first relay, and two-stage delivery ACK semantics.
 
 ### What Worked
 
@@ -22,6 +23,7 @@
 
 - Some summary metadata fields (`one-liner`) were not populated, reducing automation quality in milestone rollup.
 - Tooling path differences (`.claude` vs `.codex`) required repeated command adaptation during execution.
+- Mid-phase execution interruptions required repeated resume runs; phase summaries/checkpoints prevented state loss.
 
 ### Patterns Established
 
@@ -32,6 +34,7 @@
 
 1. Keep phase verification artifacts persistent; deleting a phase verification file breaks downstream milestone audit flow.
 2. Standardize summary frontmatter fields early to preserve high-signal milestone automation outputs.
+3. For distributed routing phases, lock route truth + fence semantics before relay implementation to avoid rework.
 
 ### Cost Observations
 

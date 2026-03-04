@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP
-status: phase_complete
-last_updated: "2026-03-04T14:10:00Z"
+status: milestone_complete
+last_updated: "2026-03-04T14:40:00Z"
 progress:
   total_phases: 9
   completed_phases: 9
@@ -21,7 +21,7 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 **Core value:** Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.  
-**Current focus:** Phase 8 complete - distributed multi-instance precise OpenCode message delivery with observability and requirement-level evidence closure
+**Current focus:** Milestone v1.0 archived (including Phase 8 closure), ready to start next milestone planning
 
 ## Artifacts
 
@@ -55,10 +55,8 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 ## Audit Outcome
 
-- Milestone audit status: `passed`
-- Requirements satisfied: `38/38`
-- Phase verification coverage: `8/8`
-- Critical gaps: `0`
+- Archived milestone audit status: `passed` (baseline covers Phase 01-07 scope)
+- Phase 8 requirement verification: `P08-ROUTE-01..P08-OBS-01` all `PASS` (see Phase 8 verification artifacts)
 - Residual debt note: Phase-07 reference baseline uses explicit local snapshot marker (`NO_REMOTE_CONFIGURED`) because repository remote metadata is unavailable in this workspace.
 
 ## Accumulated Context
@@ -67,7 +65,7 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 - Phase 8 added: solve precise OpenCode message delivery to target client user across distributed `ai-gateway` + `skill-service` multi-instance topology.
 
-### Execution Progress
+### Execution Progress (Phase 8 Closure)
 
 - Completed: `08-01-PLAN.md` (Redis route truth + CAS owner fence contract baseline)
 - Completed: `08-02-PLAN.md` (owner-first relay pipeline with first-hop gateway relay + skill-service consume/dispatch dedupe path)
@@ -92,10 +90,10 @@ See: `.planning/PROJECT.md` (updated 2026-03-04)
 
 ## Session Continuity
 
-Last session: 2026-03-04 (phase 8 plan execution)  
-Stopped at: Completed 08-04-PLAN.md  
-Resume file: none (phase complete)
+Last session: 2026-03-04 (milestone completion refresh)  
+Stopped at: Refreshed v1.0 milestone archive and trackers after Phase 8 completion  
+Resume file: `.planning/MILESTONES.md`
 
 ## Next Command
 
-`$gsd-complete-milestone`
+`$gsd-new-milestone`
