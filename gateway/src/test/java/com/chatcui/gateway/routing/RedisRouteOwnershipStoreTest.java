@@ -8,6 +8,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class RedisRouteOwnershipStoreTest {
@@ -99,5 +102,60 @@ class RedisRouteOwnershipStoreTest {
 
         assertEquals(RouteCasResult.Status.MISSING, result.status());
         assertFalse(result.applied());
+    }
+
+    private static final class InMemoryRedisExecutor implements RedisRouteOwnershipStore.RedisExecutor {
+        private final Map<String, Map<String, String>> hashes = new HashMap<>();
+
+        @Override
+        public Map<String, String> hgetall(String key) {
+            return new HashMap<>(hashes.getOrDefault(key, Map.of()));
+        }
+
+        @Override
+        public void hset(String key, Map<String, String> fields) {
+            hashes.computeIfAbsent(key, ignored -> new HashMap<>()).putAll(fields);
+        }
+
+        @Override
+        public void expire(String key, long ttlSeconds) {
+        }
+
+        @Override
+        public List<Object> eval(String script, String key, String... args) {
+            Map<String, String> row = hashes.get(key);
+            if (row == null || row.isEmpty() || !row.containsKey(RouteOwnershipRecord.FIELD_ROUTE_VERSION)) {
+                return List.of("missing");
+            }
+
+            long currentVersion = Long.parseLong(row.get(RouteOwnershipRecord.FIELD_ROUTE_VERSION));
+            long expectedVersion = Long.parseLong(args[0]);
+            if (currentVersion != expectedVersion) {
+                return List.of(
+                        "conflict",
+                        Long.toString(currentVersion),
+                        row.getOrDefault(RouteOwnershipRecord.FIELD_SKILL_OWNER, ""),
+                        row.getOrDefault(RouteOwnershipRecord.FIELD_GATEWAY_OWNER, ""),
+                        row.getOrDefault(RouteOwnershipRecord.FIELD_FENCED_OWNER, ""),
+                        row.getOrDefault(RedisRouteOwnershipStore.FIELD_UPDATED_AT_EPOCH_MS, "0"));
+            }
+
+            long nextVersion = currentVersion + 1;
+            row.put(RouteOwnershipRecord.FIELD_TENANT_ID, args[1]);
+            row.put(RouteOwnershipRecord.FIELD_SESSION_ID, args[2]);
+            row.put(RouteOwnershipRecord.FIELD_ROUTE_VERSION, Long.toString(nextVersion));
+            row.put(RouteOwnershipRecord.FIELD_SKILL_OWNER, args[3]);
+            row.put(RouteOwnershipRecord.FIELD_GATEWAY_OWNER, args[4]);
+            row.put(RouteOwnershipRecord.FIELD_FENCED_OWNER, args[5]);
+            row.put(RedisRouteOwnershipStore.FIELD_UPDATED_AT_EPOCH_MS, args[6]);
+
+            return List.of(
+                    "applied",
+                    Long.toString(nextVersion),
+                    args[3],
+                    args[4],
+                    args[5],
+                    args[6]);
+        }
     }
 }
