@@ -202,16 +202,29 @@ Plans:
 
 All v1 requirements in `.planning/REQUIREMENTS.md` are mapped to exactly one phase.
 
-### Phase 8: 解决 ai-gateway 与 skill-service 分布式多实例下 OpenCode 消息精准投递到目标客户端用户的问题
+### Phase 8: AI-Gateway + Skill-Service Distributed OpenCode Precise Delivery
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Status:** Planned
+
+**Goal:** Guarantee OpenCode messages are delivered to the correct target client user under distributed multi-instance `gateway` + `skill-service` topology, without wrong delivery, duplicate delivery, out-of-order replay, or ghost writes.
+**Requirements**: P08-ROUTE-01, P08-FENCE-01, P08-RELAY-01, P08-DEDUPE-01, P08-ACK-01, P08-RECOVERY-01, P08-OBS-01
 **Depends on:** Phase 7
-**Plans:** 0 plans
+**Plans:** 4 plans
+
+**Success Criteria:**
+1. Redis route table becomes source of truth keyed by `tenant_id + session_id`, with CAS versioning and immediate owner fence.
+2. Non-target gateway instances relay through event bus to `skill-service owner` first, then to target `gateway/client`, preserving per-session order.
+3. Full-path dedupe uses `session_id + turn_id + seq + topic`, and delivery status follows two-stage ack semantics.
+4. Unknown-owner recovery is bounded to a 15-minute replay window and ends with deterministic terminal envelope when exhausted.
+5. Route/fence/ack/recovery outcomes are observable through shared trace + low-cardinality metrics/log taxonomy.
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 8 to break down)
+- [ ] 08-01-PLAN.md - Redis route truth, CAS migration, and owner fence contract foundation
+- [ ] 08-02-PLAN.md - cross-instance relay pipeline (`gateway -> skill-service owner -> target gateway/client`) with full-path dedupe
+- [ ] 08-03-PLAN.md - two-stage ack, unknown-owner recovery window, and fenced-owner deterministic failure semantics
+- [ ] 08-04-PLAN.md - route/fence/ack observability extension, integration evidence, and phase verification closure
 
 ---
-*Last updated: 2026-03-04 after executing Phase 7 Plan 07-04*
+*Last updated: 2026-03-04 after planning Phase 8*
+
 
