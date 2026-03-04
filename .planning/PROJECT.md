@@ -2,58 +2,79 @@
 
 ## What This Is
 
-This project adds a Skill-based OpenCode interaction flow into an existing enterprise IM product (similar to DingTalk, Feishu, and Spark). Users can trigger a local OpenCode skill from chat, continue multi-turn AI conversation in a dedicated Skill client view, and send selected outputs back into IM as regular chat messages.  
-V1 delivery focuses on backend gateway + skill service + PC Agent plugin integration, with a Web UI demo replacing native IM client for integration testing.
+This project delivers a Skill-based OpenCode interaction flow for enterprise IM.  
+The shipped `v1.0` milestone provides gateway authentication, plugin-driven bridge runtime, persisted skill-session history, web demo interaction flow, and controlled sendback to IM.
 
 ## Core Value
 
 Provide a reliable, secure, human-in-the-loop AI workflow inside enterprise messaging without breaking existing IM interaction patterns.
 
-## Requirements
+## Current State
+
+- `v1.0 MVP` shipped on 2026-03-04 with 8 phases and 38 completed plans.
+- Milestone artifacts archived under `.planning/milestones/`:
+  - `v1.0-ROADMAP.md`
+  - `v1.0-REQUIREMENTS.md`
+  - `v1.0-MILESTONE-AUDIT.md`
+- Active planning is between milestones; next step is to define `v1.1` goals and roadmap.
+
+## Requirements Status
 
 ### Validated
 
-(None yet - ship to validate)
+- Yes Slash-triggered skill invocation loop works end-to-end (`CMD-01..03`, `SKL-01..03`, `DEM-01`).
+- Yes Long-lived plugin-to-gateway conversation with enforced AK/SK auth and deterministic failure contracts (`AUT-01..03`, `BRG-01..03`).
+- Yes Skill conversation persistence and query APIs are stable and replay-safe (`SVC-01..03`).
+- Yes User-driven sendback to IM is supported with correlation tracking and actionable errors (`SKL-04`, `SVC-04`, `IMS-01..03`).
+- Yes Reliability and observability baseline is closed with reconnect/resume/idempotency and cross-service metrics/log traceability (`BRG-04`, `DEM-02`).
+- Yes Plugin architecture alignment governance is in place, including additive contract versioning and hard release gate (`P01.1-*`, `P07-*`).
 
-### Active
+### Next Milestone Candidates
 
-- [ ] Slash command to skill invocation flow works end-to-end.
-- [ ] Long-lived OpenCode conversation through AI-Gateway is stable and authenticated.
-- [ ] Skill conversation history is persisted and queryable.
-- [ ] User can select AI output and send it back into IM chat through Skill service APIs.
-- [ ] Web UI demo can reproduce the full interaction for cross-team integration.
+- [ ] Android/iPhone/Harmony client parity for skill trigger, session, and sendback (`MCL-01..03`).
+- [ ] Role-based permission controls for skill usage (`PRD-01`).
+- [ ] Per-tenant quota and throttling for invocation governance (`PRD-02`).
+- [ ] Usage and audit dashboard for skill and sendback events (`PRD-03`).
+- [ ] Production hardening scope for higher-scale rollout (capacity, resiliency SLO, ops automation).
 
 ### Out of Scope
 
-- Native mobile client parity in v1 - defer until PC/Web loop is stable.
-- Advanced AI capability orchestration (multi-agent routing, tool marketplace) - not required for first business validation.
-- Full production hardening for global scale - this milestone is for functional and integration validation.
+- Advanced AI capability orchestration (multi-agent routing, tool marketplace) before client parity and governance hardening.
+- Cross-region active-active deployment before next milestone SLO and cost baseline are defined.
 
 ## Context
 
-- Existing backend stack: JDK 21, Spring Boot 3.4.6, Spring MVC, MyBatis, MySQL 5.7.
-- Existing middleware: Kafka, Redis, MQ.
-- Existing clients: Android, iPhone, Harmony, Windows (Electron + React + JS/TS).
-- Planned bridge component: `message-bridge-opencode-plugin` style PC Agent plugin that keeps long connection with AI-Gateway and converts protocol between OpenCode and internal IM/Skill protocol.
-- Security entry condition: AK/SK must be configured client-side and validated by AI-Gateway before a long-lived session is accepted.
-- Skill service responsibilities: persist records and provide APIs for history query + IM sendback.
+- Runtime stack remains JDK 21 + Spring Boot 3.4.6 + MVC + MyBatis + MySQL 5.7 plus TypeScript plugin/web modules.
+- Integration baseline now includes:
+  - `pc-agent-plugin` dual-mode runtime (host plugin + CLI real-chain)
+  - `gateway` auth/resume/persistence forwarding and observability contracts
+  - `skill-service` persistence and IM sendback APIs
+  - `web-demo` end-to-end interaction and sendback UX flow
+- Release governance now requires `npm.cmd --prefix pc-agent-plugin run verify:phase-07` and CI alignment gate pass for plugin alignment claims.
 
 ## Constraints
 
 - **Tech stack**: Keep existing backend baseline (JDK 21 + Spring Boot 3.4.6 + MVC + MyBatis + MySQL 5.7) - minimize platform risk.
 - **Compatibility**: Must interoperate with existing IM message model and chat send APIs - avoid breaking current clients.
 - **Security**: AK/SK validation is mandatory before long connection establishment - prevent unauthorized gateway access.
-- **Delivery scope**: V1 targets gateway, skill service, PC Agent plugin, and Web UI demo - control milestone size.
+- **Delivery scope**: Next milestone should prioritize client expansion + governance hardening without introducing unrelated capability breadth.
 - **Protocol**: OpenCode protocol must be translated into internal protocol by plugin/gateway layer - preserve backend ownership of internal contracts.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Build v1 around gateway + skill service + PC Agent + Web UI demo | Fastest path to validate full closed loop before multi-client rollout | Pending |
-| Enforce AK/SK at connection establishment time | Security boundary must be explicit and early | Pending |
-| Keep IM sendback as server API call from Skill flow | Preserve IM source-of-truth and auditability | Pending |
-| Persist full Skill chat records in skill service | Required for continuity, replay, and troubleshooting | Pending |
+| Build v1 around gateway + skill service + PC Agent + Web UI demo | Fastest path to validate full closed loop before multi-client rollout | Validated in v1.0 |
+| Enforce AK/SK at connection establishment time | Security boundary must be explicit and early | Validated in v1.0 (`AUT-01..03`) |
+| Keep IM sendback as server API call from Skill flow | Preserve IM source-of-truth and auditability | Validated in v1.0 (`IMS-01..03`) |
+| Persist full Skill chat records in skill service | Required for continuity, replay, and troubleshooting | Validated in v1.0 (`SVC-01..03`) |
+| Use release-block governance for plugin alignment claims | Prevent architecture drift and unverifiable compatibility statements | Adopted in v1.0 Phase 7 (`verify:phase-07` + CI gate) |
+
+## Next Milestone Goals
+
+1. Expand from demo/client subset to multi-client parity with clear acceptance criteria.
+2. Add tenant governance controls (permissions, quotas, audit visibility).
+3. Preserve v1.0 compatibility and observability guarantees while scaling rollout confidence.
 
 ---
-*Last updated: 2026-03-03 after initialization*
+*Last updated: 2026-03-04 after v1.0 milestone completion*
