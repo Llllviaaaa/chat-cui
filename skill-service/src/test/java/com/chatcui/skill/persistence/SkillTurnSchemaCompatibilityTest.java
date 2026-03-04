@@ -35,6 +35,16 @@ class SkillTurnSchemaCompatibilityTest {
         assertTrue(ddl.contains("key idx_sendback_trace_id (trace_id)"));
     }
 
+    @Test
+    void sendbackIdempotencyMigrationAddsDeterministicReplayKey() throws IOException {
+        String ddl = loadMigration("V3__sendback_idempotency_guard.sql").toLowerCase(Locale.ROOT);
+        assertTrue(ddl.contains("alter table skill_sendback_record"));
+        assertTrue(ddl.contains("add column idempotency_key varchar(128) default null"));
+        assertTrue(ddl.contains("modify column idempotency_key varchar(128) not null"));
+        assertTrue(ddl.contains("unique key uk_sendback_idempotency_key (idempotency_key)"));
+        assertTrue(ddl.contains("key idx_sendback_session_turn_idempotency (session_id, turn_id, idempotency_key)"));
+    }
+
     private String loadMigration(String fileName) throws IOException {
         Path migration = Path.of("src", "main", "resources", "db", "migration", fileName);
         return Files.readString(migration, StandardCharsets.UTF_8);

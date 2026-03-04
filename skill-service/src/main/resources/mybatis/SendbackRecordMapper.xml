@@ -7,6 +7,7 @@
     <resultMap id="SendbackRecordMap" type="com.chatcui.skill.persistence.model.SendbackRecord">
         <constructor>
             <arg column="request_id" javaType="java.lang.String"/>
+            <arg column="idempotency_key" javaType="java.lang.String"/>
             <arg column="tenant_id" javaType="java.lang.String"/>
             <arg column="client_id" javaType="java.lang.String"/>
             <arg column="session_id" javaType="java.lang.String"/>
@@ -26,6 +27,7 @@
     <insert id="insert" parameterType="com.chatcui.skill.persistence.model.SendbackRecord">
         INSERT INTO skill_sendback_record (
             request_id,
+            idempotency_key,
             tenant_id,
             client_id,
             session_id,
@@ -40,6 +42,7 @@
             error_message
         ) VALUES (
             #{requestId},
+            #{idempotencyKey},
             #{tenantId},
             #{clientId},
             #{sessionId},
@@ -57,6 +60,7 @@
 
     <select id="findByRequestId" resultMap="SendbackRecordMap">
         SELECT request_id,
+               idempotency_key,
                tenant_id,
                client_id,
                session_id,
@@ -74,5 +78,25 @@
         WHERE request_id = #{requestId}
         LIMIT 1
     </select>
-</mapper>
 
+    <select id="findByIdempotencyKey" resultMap="SendbackRecordMap">
+        SELECT request_id,
+               idempotency_key,
+               tenant_id,
+               client_id,
+               session_id,
+               turn_id,
+               trace_id,
+               conversation_id,
+               selected_text,
+               message_text,
+               send_status,
+               im_message_id,
+               error_code,
+               error_message,
+               created_at
+        FROM skill_sendback_record
+        WHERE idempotency_key = #{idempotencyKey}
+        LIMIT 1
+    </select>
+</mapper>

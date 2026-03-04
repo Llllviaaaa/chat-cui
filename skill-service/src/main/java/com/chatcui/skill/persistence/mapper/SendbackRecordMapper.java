@@ -12,5 +12,6 @@ public interface SendbackRecordMapper {
     int insert(SendbackRecord record);
 
     Optional<SendbackRecord> findByRequestId(@Param("requestId") String requestId);
-}
 
+    Optional<SendbackRecord> findByIdempotencyKey(@Param("idempotencyKey") String idempotencyKey);
+}
