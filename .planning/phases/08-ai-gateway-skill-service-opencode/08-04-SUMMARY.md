@@ -37,7 +37,7 @@ patterns-established:
   - "Structured runtime logs include `stage`, `trace_id`, and `route_version` and intentionally omit payload/body."
   - "Verification docs map every `P08-*` requirement to both artifacts and concrete command evidence IDs."
 requirements-completed: [P08-OBS-01]
-duration: 14 min
+duration: 21 min
 completed: 2026-03-04
 ---
 
@@ -47,9 +47,9 @@ completed: 2026-03-04
 
 ## Performance
 
-- **Duration:** 14 min
+- **Duration:** 21 min
 - **Started:** 2026-03-04T13:55:46Z
-- **Completed:** 2026-03-04T14:09:10Z
+- **Completed:** 2026-03-04T14:16:29Z
 - **Tasks:** 2
 - **Files modified:** 9
 
