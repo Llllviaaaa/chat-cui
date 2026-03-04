@@ -9,10 +9,16 @@ import com.chatcui.gateway.persistence.DeliveryRetryQueue;
 import com.chatcui.gateway.persistence.DeliveryStatusReporter;
 import com.chatcui.gateway.persistence.SkillPersistenceForwarder;
 import com.chatcui.gateway.persistence.model.SkillTurnForwardEvent;
+import com.chatcui.gateway.relay.RelayPublisher;
+import com.chatcui.gateway.routing.RouteCasResult;
+import com.chatcui.gateway.routing.RouteOwnershipRecord;
+import com.chatcui.gateway.routing.RouteOwnershipStore;
 import com.chatcui.gateway.runtime.BridgePersistencePublisher;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -210,10 +216,122 @@ class SkillPersistenceForwardingIntegrationTest {
                     "failed",
                     FailureClass.BRIDGE,
                     false));
+            assertEquals(1.0, counterCount(
+                    meterRegistry,
+                    "chatcui.gateway.route.outcomes",
+                    "gateway.route",
+                    "route_conflict",
+                    FailureClass.BRIDGE,
+                    false));
         } finally {
             executor.shutdownNow();
             scheduler.shutdownNow();
         }
+    }
+
+    @Test
+    void ownerFencedRelaySuccessAndTimeoutOutcomesAreObservable() {
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        BridgeMetricsRegistry metricsRegistry = new BridgeMetricsRegistry(meterRegistry);
+        SkillPersistenceForwarder forwarder = new SkillPersistenceForwarder(
+                payload -> {
+                },
+                (event, error) -> {
+                },
+                Runnable::run);
+        DeliveryStatusReporter reporter = new DeliveryStatusReporter();
+        RouteOwnershipStore routeStore = fixedRouteStore(new RouteOwnershipRecord(
+                "tenant-shared",
+                "session-shared-001",
+                41L,
+                "skill-owner-a",
+                "gateway-owner-b",
+                "gateway-owner-a",
+                Instant.parse("2026-03-04T00:00:00Z")));
+        RelayPublisher relaySuccess = envelope -> RelayPublisher.PublishReceipt.accepted(envelope.dedupeKey());
+        RelayPublisher relayTimeout = envelope -> {
+            throw new IllegalStateException("relay timeout");
+        };
+
+        BridgePersistencePublisher fencedPublisher = new BridgePersistencePublisher(
+                forwarder,
+                reporter,
+                metricsRegistry,
+                routeStore,
+                relaySuccess,
+                "gateway-owner-a");
+        BridgePersistencePublisher relaySuccessPublisher = new BridgePersistencePublisher(
+                forwarder,
+                reporter,
+                metricsRegistry,
+                fixedRouteStore(new RouteOwnershipRecord(
+                        "tenant-shared",
+                        "session-shared-001",
+                        42L,
+                        "skill-owner-a",
+                        "gateway-owner-b",
+                        null,
+                        Instant.parse("2026-03-04T00:00:00Z"))),
+                relaySuccess,
+                "gateway-owner-a");
+        BridgePersistencePublisher relayTimeoutPublisher = new BridgePersistencePublisher(
+                forwarder,
+                reporter,
+                metricsRegistry,
+                fixedRouteStore(new RouteOwnershipRecord(
+                        "tenant-shared",
+                        "session-shared-001",
+                        43L,
+                        "skill-owner-a",
+                        "gateway-owner-b",
+                        null,
+                        Instant.parse("2026-03-04T00:00:00Z"))),
+                relayTimeout,
+                "gateway-owner-a");
+
+        fencedPublisher.publish("skill.turn.delta", eventWithClient("client-stale", 1L));
+        relaySuccessPublisher.publish("skill.turn.delta", eventWithClient("client-stable", 2L));
+        try {
+            relayTimeoutPublisher.publish("skill.turn.delta", eventWithClient("client-stable", 3L));
+        } catch (IllegalStateException ignored) {
+            // expected for relay timeout branch
+        }
+
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.route.outcomes",
+                "gateway.route",
+                "owner_fenced",
+                FailureClass.BRIDGE,
+                false));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.relay.outcomes",
+                "gateway.relay",
+                "relay_success",
+                FailureClass.BRIDGE,
+                false));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.relay.outcomes",
+                "gateway.relay",
+                "relay_timeout",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(2.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.ack.outcomes",
+                "gateway.ack",
+                "gateway_owner_accepted",
+                FailureClass.BRIDGE,
+                true));
+        assertEquals(1.0, counterCount(
+                meterRegistry,
+                "chatcui.gateway.ack.outcomes",
+                "gateway.ack",
+                "client_delivery_timeout",
+                FailureClass.BRIDGE,
+                true));
     }
 
     private SkillTurnForwardEvent event(String turnId, long seq, String eventType, String payload) {
@@ -229,6 +347,20 @@ class SkillPersistenceForwardingIntegrationTest {
                 payload,
                 "skill.turn." + eventType
         );
+    }
+
+    private SkillTurnForwardEvent eventWithClient(String clientId, long seq) {
+        return new SkillTurnForwardEvent(
+                "tenant-shared",
+                clientId,
+                "session-shared-001",
+                "turn-shared-001",
+                seq,
+                "trace-" + seq,
+                "assistant",
+                "delta",
+                "payload-" + seq,
+                "skill.turn.delta");
     }
 
     private double counterCount(
@@ -266,5 +398,31 @@ class SkillPersistenceForwardingIntegrationTest {
     @FunctionalInterface
     private interface Check {
         boolean evaluate();
+    }
+
+    private RouteOwnershipStore fixedRouteStore(RouteOwnershipRecord record) {
+        return new RouteOwnershipStore() {
+            @Override
+            public Optional<RouteOwnershipRecord> load(String tenantId, String sessionId) {
+                return Optional.of(record);
+            }
+
+            @Override
+            public RouteOwnershipRecord upsert(RouteOwnershipRecord routeRecord, Duration ttl) {
+                throw new UnsupportedOperationException("not needed in test");
+            }
+
+            @Override
+            public RouteCasResult casTransfer(
+                    String tenantId,
+                    String sessionId,
+                    long expectedRouteVersion,
+                    String newSkillOwner,
+                    String newGatewayOwner,
+                    String fencedOwner,
+                    Duration ttl) {
+                throw new UnsupportedOperationException("not needed in test");
+            }
+        };
     }
 }

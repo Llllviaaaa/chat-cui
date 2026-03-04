@@ -2,8 +2,12 @@ package com.chatcui.skill.service;
 
 import com.chatcui.skill.api.dto.SkillTurnEventRequest;
 import com.chatcui.skill.observability.FailureClass;
+import com.chatcui.skill.observability.SkillMetricsRecorder;
 import com.chatcui.skill.persistence.mapper.TurnRecordMapper;
 import com.chatcui.skill.persistence.model.TurnRecord;
+import com.chatcui.skill.relay.RelayDispatchService;
+import com.chatcui.skill.relay.RelayEventConsumer;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -111,6 +115,92 @@ class TurnPersistenceServiceTest {
         org.junit.jupiter.api.Assertions.assertFalse(envelope.toString().contains("sensitive payload"));
     }
 
+    @Test
+    void relayMetricsDistinguishRelaySuccessTimeoutOwnerFenceAndReplayWindowExpiry() {
+        SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+        SkillMetricsRecorder metricsRecorder = new SkillMetricsRecorder(meterRegistry);
+        RelayEventConsumer.AckClient noOpAck = (streamKey, group, messageId) -> {
+        };
+
+        RelayDispatchService dispatchedService = new RelayDispatchService(
+                (tenantId, sessionId) -> Optional.of(new RelayDispatchService.RouteSnapshot(
+                        tenantId,
+                        sessionId,
+                        12L,
+                        "skill-owner-a",
+                        "gateway-owner-b")),
+                (targetGatewayOwner, relayEvent) -> {
+                });
+        RelayEventConsumer dispatchedConsumer = new RelayEventConsumer(
+                "relay-group",
+                "skill-owner-a",
+                dispatchedService,
+                new RelayEventConsumer.InMemoryTupleDedupeStore(),
+                noOpAck,
+                metricsRecorder);
+
+        RelayDispatchService timeoutService = new RelayDispatchService(
+                (tenantId, sessionId) -> Optional.of(new RelayDispatchService.RouteSnapshot(
+                        tenantId,
+                        sessionId,
+                        12L,
+                        "skill-owner-a",
+                        "gateway-owner-b")),
+                (targetGatewayOwner, relayEvent) -> {
+                    throw new IllegalStateException("dispatch timeout");
+                });
+        RelayEventConsumer timeoutConsumer = new RelayEventConsumer(
+                "relay-group",
+                "skill-owner-a",
+                timeoutService,
+                new RelayEventConsumer.InMemoryTupleDedupeStore(),
+                noOpAck,
+                metricsRecorder);
+
+        RelayDispatchService notOwnerService = new RelayDispatchService(
+                (tenantId, sessionId) -> Optional.of(new RelayDispatchService.RouteSnapshot(
+                        tenantId,
+                        sessionId,
+                        12L,
+                        "skill-owner-b",
+                        "gateway-owner-b")),
+                (targetGatewayOwner, relayEvent) -> {
+                });
+        RelayEventConsumer notOwnerConsumer = new RelayEventConsumer(
+                "relay-group",
+                "skill-owner-a",
+                notOwnerService,
+                new RelayEventConsumer.InMemoryTupleDedupeStore(),
+                noOpAck,
+                metricsRecorder);
+
+        RelayDispatchService missingRouteService =
+                new RelayDispatchService((tenantId, sessionId) -> Optional.empty(), (targetGatewayOwner, relayEvent) -> {
+                });
+        RelayEventConsumer replayExpiredConsumer = new RelayEventConsumer(
+                "relay-group",
+                "skill-owner-a",
+                missingRouteService,
+                new RelayEventConsumer.InMemoryTupleDedupeStore(),
+                noOpAck,
+                (dedupeTuple, now) -> RelayEventConsumer.RecoveryDecision.REPLAY_WINDOW_EXPIRED,
+                java.time.Clock.systemUTC(),
+                metricsRecorder);
+
+        dispatchedConsumer.consume(streamRecord("1-0", "turn-1", 1L));
+        RelayEventConsumer.ConsumeOutcome timeout = timeoutConsumer.consume(streamRecord("2-0", "turn-2", 2L));
+        RelayEventConsumer.ConsumeOutcome notOwner = notOwnerConsumer.consume(streamRecord("3-0", "turn-3", 3L));
+        RelayEventConsumer.ConsumeOutcome replayExpired = replayExpiredConsumer.consume(streamRecord("4-0", "turn-4", 4L));
+
+        org.junit.jupiter.api.Assertions.assertEquals(RelayEventConsumer.ConsumeStatus.PENDING_RETRY, timeout.status());
+        org.junit.jupiter.api.Assertions.assertEquals(RelayEventConsumer.ConsumeStatus.SKIPPED_NOT_OWNER, notOwner.status());
+        org.junit.jupiter.api.Assertions.assertEquals(RelayEventConsumer.ConsumeStatus.REPLAY_WINDOW_EXPIRED, replayExpired.status());
+        assertRelayOutcome(meterRegistry, "relay_success", false, 1.0);
+        assertRelayOutcome(meterRegistry, "relay_timeout", true, 1.0);
+        assertRelayOutcome(meterRegistry, "owner_fenced", true, 1.0);
+        assertRelayOutcome(meterRegistry, "replay_window_expired", false, 1.0);
+    }
+
     private SkillTurnEventRequest event(String sessionId, String turnId, Long seq, SkillTurnEventRequest.EventType eventType, String payload) {
         return new SkillTurnEventRequest(
                 "tenant-1",
@@ -132,5 +222,47 @@ class TurnPersistenceServiceTest {
                         && record.payload().equals(payload)
                         && record.seq().equals(seq)
         );
+    }
+
+    private RelayEventConsumer.StreamRecord streamRecord(String messageId, String turnId, long seq) {
+        return new RelayEventConsumer.StreamRecord(
+                "chatcui:relay:first-hop:{tenant-1:session-1}",
+                messageId,
+                new RelayDispatchService.RelayEvent(
+                        "tenant-1",
+                        "client-1",
+                        "session-1",
+                        turnId,
+                        seq,
+                        "skill.turn.delta",
+                        "trace-" + seq,
+                        12L,
+                        "gateway-owner-a",
+                        "skill-owner-a",
+                        "gateway-owner-b",
+                        "gateway_to_skill_owner",
+                        "tenant-1:session-1",
+                        "session-1|" + turnId + "|" + seq + "|skill.turn.delta",
+                        "assistant",
+                        "delta",
+                        "payload-" + seq,
+                        null,
+                        null));
+    }
+
+    private void assertRelayOutcome(
+            SimpleMeterRegistry meterRegistry,
+            String outcome,
+            boolean retryable,
+            double expected) {
+        double actual = meterRegistry.find("chatcui.skill.relay.outcomes")
+                .tags(
+                        "component", "skill-service.relay",
+                        "outcome", outcome,
+                        "failure_class", FailureClass.BRIDGE.value(),
+                        "retryable", Boolean.toString(retryable))
+                .counter()
+                .count();
+        org.junit.jupiter.api.Assertions.assertEquals(expected, actual);
     }
 }
