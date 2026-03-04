@@ -13,6 +13,7 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -97,5 +98,48 @@ class SessionHistoryControllerIntegrationTest {
                 .andExpect(jsonPath("$.items[0].snapshot").value("snapshot text"))
                 .andExpect(jsonPath("$.items[0].turn_status").value("completed"))
                 .andExpect(jsonPath("$.items[0].delivery_status").value("delivered"));
+    }
+
+    @Test
+    void validatesRequiredTenantClientSessionInputs() throws Exception {
+        mockMvc.perform(get("/sessions//history")
+                        .queryParam("client_id", "client-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/sessions/session-1/history")
+                        .queryParam("tenant_id", "tenant-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void invalidCursorReturnsDeterministicErrorContract() throws Exception {
+        doThrow(new IllegalArgumentException("invalid cursor_turn_id"))
+                .when(queryService)
+                .query(any());
+
+        mockMvc.perform(get("/sessions/session-1/history")
+                        .queryParam("tenant_id", "tenant-1")
+                        .queryParam("client_id", "client-1")
+                        .queryParam("cursor_turn_id", "bad cursor")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error.code").value("INVALID_CURSOR"));
+    }
+
+    @Test
+    void unknownSessionReturnsDeterministicErrorContract() throws Exception {
+        doThrow(new SessionHistoryQueryService.SessionNotFoundException("session-404"))
+                .when(queryService)
+                .query(any());
+
+        mockMvc.perform(get("/sessions/session-404/history")
+                        .queryParam("tenant_id", "tenant-1")
+                        .queryParam("client_id", "client-1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error.code").value("SESSION_NOT_FOUND"));
     }
 }
