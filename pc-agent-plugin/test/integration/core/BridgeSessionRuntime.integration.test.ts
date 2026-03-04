@@ -5,8 +5,13 @@ import {
   OPCODE_TYPES,
   type GatewayMessage
 } from "../../../src/core/bridge/ProtocolBridge";
-import type { ResumeAnchor } from "../../../src/core/events/PluginEvents";
+import {
+  HOST_EVENT_CONTRACT_VERSION,
+  type ResumeAnchor
+} from "../../../src/core/events/PluginEvents";
 import { createBridgeRuntime } from "../../../src/core/runtime/BridgeRuntimeFactory";
+import { HostEventBridge } from "../../../src/host-adapter/HostEventBridge";
+import type { HostOutboundEvent } from "../../../src/host-adapter/contracts/HostPluginContract";
 import type {
   GatewayConnectInput,
   GatewayReconnectInput,
@@ -97,6 +102,84 @@ async function waitFor(predicate: () => boolean): Promise<void> {
 }
 
 describe("BridgeSessionRuntime integration", () => {
+  it("projects host-facing runtime and gateway events with contract version metadata", () => {
+    const transport = new MemoryGatewayTransport();
+    const runtime = createBridgeRuntime({ transport });
+    const hostBridge = new HostEventBridge();
+    const hostEvents: HostOutboundEvent[] = [];
+    const unsubscribe = hostBridge.bindRuntime(runtime, (event) => {
+      hostEvents.push(event);
+    });
+
+    runtime.init();
+    runtime.start();
+    runtime.startSession("session-1", "trace-1");
+    runtime.sendOpenCode({
+      type: OPCODE_TYPES.TURN_REQUEST,
+      payload: {
+        session_id: "session-1",
+        turn_id: "turn-1",
+        seq: 1,
+        trace_id: "trace-1",
+        prompt: "hello"
+      }
+    });
+    transport.emitIncoming({
+      topic: GATEWAY_TOPICS.TURN_DELTA,
+      data: {
+        protocol_version: BRIDGE_PROTOCOL_VERSION,
+        session_id: "session-1",
+        turn_id: "turn-1",
+        seq: 2,
+        trace_id: "trace-1",
+        delta: "he"
+      }
+    });
+    runtime.reportError("INTEGRATION_PROBE", "probe");
+    unsubscribe();
+
+    const runtimeStarted = hostEvents.find((event) => event.type === "runtime.started");
+    expect(runtimeStarted?.payload).toMatchObject({
+      contract_version: HOST_EVENT_CONTRACT_VERSION
+    });
+
+    const outboundRequest = hostEvents.find(
+      (event) =>
+        event.type === "gateway.outbound" &&
+        event.payload.topic === GATEWAY_TOPICS.TURN_REQUEST
+    );
+    expect(outboundRequest?.payload).toMatchObject({
+      contract_version: HOST_EVENT_CONTRACT_VERSION
+    });
+    expect(outboundRequest?.payload.data).toMatchObject({
+      protocol_version: BRIDGE_PROTOCOL_VERSION,
+      session_id: "session-1",
+      turn_id: "turn-1",
+      seq: 1,
+      trace_id: "trace-1",
+      prompt: "hello"
+    });
+
+    const inboundDelta = hostEvents.find(
+      (event) =>
+        event.type === "gateway.inbound" &&
+        event.payload.topic === OPCODE_TYPES.TURN_DELTA
+    );
+    expect(inboundDelta?.payload).toMatchObject({
+      contract_version: HOST_EVENT_CONTRACT_VERSION
+    });
+    expect(inboundDelta?.payload.data).toMatchObject({
+      delta: "he"
+    });
+
+    const runtimeError = hostEvents.find((event) => event.type === "runtime.error");
+    expect(runtimeError?.payload).toMatchObject({
+      code: "INTEGRATION_PROBE",
+      message: "probe",
+      contract_version: HOST_EVENT_CONTRACT_VERSION
+    });
+  });
+
   it("streams one session request/response over long-lived transport", () => {
     const transport = new MemoryGatewayTransport();
     const runtime = createBridgeRuntime({ transport });

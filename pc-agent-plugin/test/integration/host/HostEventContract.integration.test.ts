@@ -6,6 +6,7 @@ import {
   OPCODE_TYPES
 } from "../../../src/core/bridge/ProtocolBridge";
 import {
+  HOST_EVENT_CONTRACT_VERSION,
   RECONNECT_FAILURE_REASON_CODES,
   RECONNECT_NEXT_ACTIONS
 } from "../../../src/core/events/PluginEvents";
@@ -65,6 +66,7 @@ describe("HostEventContract integration", () => {
     const outbound = events.find((event) => event.type === "gateway.outbound");
     expect(outbound).toBeDefined();
     expect(outbound?.payload.topic).toBe("skill.session.start");
+    expect(outbound?.payload.contract_version).toBe(HOST_EVENT_CONTRACT_VERSION);
 
     const request = events.find(
       (event) =>
@@ -104,6 +106,7 @@ describe("HostEventContract integration", () => {
     expect(inbound).toBeDefined();
     expect(inbound?.payload.topic).toBe(OPCODE_TYPES.TURN_DELTA);
     expect(inbound?.payload.data).toMatchObject({ delta: "delta token" });
+    expect(inbound?.payload.contract_version).toBe(HOST_EVENT_CONTRACT_VERSION);
   });
 
   it("emits deterministic error for unsupported host events", () => {
@@ -118,6 +121,7 @@ describe("HostEventContract integration", () => {
     expect(runtimeError).toBeDefined();
     expect(runtimeError?.payload.code).toBe("HOST_EVENT_UNSUPPORTED");
     expect(runtimeError?.payload.message).toContain("unknown.host.event");
+    expect(runtimeError?.payload.contract_version).toBe(HOST_EVENT_CONTRACT_VERSION);
   });
 
   it("keeps runtime.reconnect backward compatible with typed resume payload", () => {
@@ -151,6 +155,12 @@ describe("HostEventContract integration", () => {
     expect(reconnecting).toHaveLength(2);
     expect(reconnecting[0]?.payload.attempt).toBe(1);
     expect(reconnecting[1]?.payload.attempt).toBe(2);
+    expect(reconnecting[0]?.payload.contract_version).toBe(
+      HOST_EVENT_CONTRACT_VERSION
+    );
+    expect(reconnecting[1]?.payload.contract_version).toBe(
+      HOST_EVENT_CONTRACT_VERSION
+    );
 
     const runtimeError = events.find((event) => event.type === "runtime.error");
     expect(runtimeError).toBeUndefined();

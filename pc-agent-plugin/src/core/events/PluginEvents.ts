@@ -1,5 +1,7 @@
 export type RuntimeHealth = "healthy" | "degraded" | "down";
 
+export const HOST_EVENT_CONTRACT_VERSION = "1.0.0";
+
 export const FAILURE_CLASS_VALUES = [
   "auth",
   "bridge",

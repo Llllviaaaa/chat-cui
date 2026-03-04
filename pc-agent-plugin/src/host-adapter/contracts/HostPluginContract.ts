@@ -7,7 +7,9 @@ import type {
 
 export interface HostOutboundEvent {
   type: string;
-  payload: Record<string, unknown>;
+  payload: {
+    contract_version: string;
+  } & Record<string, unknown>;
 }
 
 export interface HostReconnectPayload {

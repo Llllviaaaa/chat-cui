@@ -1,4 +1,7 @@
-import type { PluginEvent } from "../core/events/PluginEvents";
+import {
+  HOST_EVENT_CONTRACT_VERSION,
+  type PluginEvent
+} from "../core/events/PluginEvents";
 import type { BridgeRuntime } from "../core/runtime/BridgeRuntime";
 import type {
   HostInboundEvent,
@@ -47,9 +50,13 @@ export class HostEventBridge {
   }
 
   private toHostEvent(event: PluginEvent): HostOutboundEvent {
+    const payload = event.payload as Record<string, unknown>;
     return {
       type: event.name,
-      payload: event.payload as Record<string, unknown>
+      payload: {
+        ...payload,
+        contract_version: HOST_EVENT_CONTRACT_VERSION
+      }
     };
   }
 }
